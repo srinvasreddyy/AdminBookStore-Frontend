@@ -1,30 +1,30 @@
 import React, { useState } from 'react'
-import { Home, Layers2,Album,Plus, ShoppingBag, TvMinimal, Settings, HelpCircle, FolderOpen } from 'lucide-react'
-import { TbCircleLetterBFilled } from "react-icons/tb";
+import { Home, Layers2, Album, Plus, ShoppingBag, TvMinimal, Settings, HelpCircle } from 'lucide-react'
+import { TbCircleLetterBFilled } from "react-icons/tb"
+import { useNavigate } from "@tanstack/react-router"
 
 const Layout = ({ children }) => {
   const [activeMenu, setActiveMenu] = useState('Home')
+  const navigate = useNavigate()
 
   const mainMenuItems = [
-    { name: 'Home', icon: Home },
-    { name: 'Orders', icon: ShoppingBag},
-    { name: 'Add Books', icon: Plus },
-     { name: 'Books Management', icon: Album },
-    { name: 'Category Management', icon: Layers2 },
-    { name: 'HomePage Management', icon: TvMinimal },
+    { name: 'Home', icon: Home, path: '/' },
+    { name: 'Orders', icon: ShoppingBag, path: '/orders' },
+    { name: 'Add Books', icon: Plus, path: '/add-books' },
+    { name: 'Books Management', icon: Album, path: '/books-management' },
+    { name: 'Category Management', icon: Layers2, path: '/category-management' },
+    { name: 'HomePage Management', icon: TvMinimal, path: '/homepage-management' },
   ]
 
   const toolsItems = [
-    { name: 'Setting', icon: Settings },
-    { name: 'Help', icon: HelpCircle },
+    { name: 'Setting', icon: Settings, path: '/settings' },
+    { name: 'Help', icon: HelpCircle, path: '/help' },
   ]
-
- 
 
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-70 border-r border-gray-200 bg-white shadow-lg flex flex-col">
+      <aside className="w-70 border-r border-gray-200 bg-white  flex flex-col">
         {/* Logo */}
         <div className="p-6 flex items-center gap-1">
           <span><TbCircleLetterBFilled className="text-3xl" /></span>
@@ -39,7 +39,10 @@ const Layout = ({ children }) => {
             return (
               <button
                 key={item.name}
-                onClick={() => setActiveMenu(item.name)}
+                onClick={() => {
+                  setActiveMenu(item.name)
+                  navigate({ to: item.path })
+                }}
                 className={`w-full flex items-center cursor-pointer gap-3 px-4 py-3 rounded-md transition-all duration-200 ${
                   isActive
                     ? 'bg-gradient-to-r from-neutral-700 to-neutral-800 text-white '
@@ -60,7 +63,10 @@ const Layout = ({ children }) => {
               return (
                 <button
                   key={item.name}
-                  onClick={() => setActiveMenu(item.name)}
+                  onClick={() => {
+                    setActiveMenu(item.name)
+                    navigate({ to: item.path })
+                  }}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100 transition-all duration-200"
                 >
                   <Icon className="w-4 h-4" />
@@ -69,8 +75,6 @@ const Layout = ({ children }) => {
               )
             })}
           </div>
-
-          
         </nav>
       </aside>
 
