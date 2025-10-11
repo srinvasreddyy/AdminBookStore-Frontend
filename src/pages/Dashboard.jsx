@@ -1,5 +1,6 @@
 import React from "react";
 import { CircleUser } from "lucide-react";
+
 const orders = [
   {
     id: "#ORD-1001",
@@ -39,11 +40,11 @@ const Dashboard = () => {
   return (
     <>
       {/* Top Header */}
-      <header className="bg-white border-b sticky top-0 z-50 border-gray-200 px-8 py-3 flex items-center justify-between">
+      <header className="bg-white border-b sticky top-0 z-50 max-lg:z-10 max-lg:top-11 border-gray-200 px-6 py-3 flex items-center justify-between max-md:flex-col max-md:items-start max-md:gap-3">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-14 h-14 bg-black rounded-full flex items-center justify-center border-4 ">
-              <img src="https://avatar.iran.liara.run/public"/>
+            <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center border-4">
+              <img src="https://avatar.iran.liara.run/public" alt="Avatar" />
             </div>
           </div>
           <div>
@@ -51,31 +52,31 @@ const Dashboard = () => {
               Good Evening Team!
             </h2>
             <p className="text-gray-500 text-xs">
-              Have an in-depth look at all the metrics within your dashboard.
+              Have an look at all the metrics within your dashboard.
             </p>
           </div>
         </div>
-        <button className="p-3 hover:bg-gray-100 rounded-full transition-colors">
+        <button className="p-3 max-lg:hidden hover:bg-gray-100 rounded-full transition-colors self-end max-md:self-start">
           <CircleUser className="w-6 h-6 text-gray-400" />
         </button>
       </header>
 
       {/* Dashboard Content */}
-      <div className="p-8">
+      <div className="p-8 max-md:p-4">
         {/* Stats Cards */}
-        <div className="bg-gradient-to-r from-neutral-700 to-neutral-800 rounded-xl p-8  mb-8">
-          <div className="grid grid-cols-3 gap-8">
+        <div className="bg-gradient-to-r from-neutral-700 to-neutral-800 rounded-xl p-8 mb-8 max-md:p-4">
+          <div className="grid grid-cols-3 gap-8 max-lg:grid-cols-2 max-sm:grid-cols-1">
             {/* Monthly Revenue */}
             <div className="text-white">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                   <span className="text-2xl">💰</span>
                 </div>
                 <span className="text-sm opacity-90">Monthly Revenue</span>
               </div>
               <div className="flex items-center gap-3">
                 <p className="text-3xl font-bold">$3.500</p>
-                <span className="bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-sm font-semibold">
+                <span className="bg-white/20 px-2 py-1 rounded-lg text-sm font-semibold">
                   +2.4%
                 </span>
               </div>
@@ -87,14 +88,14 @@ const Dashboard = () => {
             {/* Monthly Sales */}
             <div className="text-white">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                   <span className="text-2xl">🎟️</span>
                 </div>
                 <span className="text-sm opacity-90">Monthly Sales</span>
               </div>
               <div className="flex items-center gap-3">
                 <p className="text-3xl font-bold">$6.750</p>
-                <span className="bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-sm font-semibold">
+                <span className="bg-white/20 px-2 py-1 rounded-lg text-sm font-semibold">
                   +1.4%
                 </span>
               </div>
@@ -106,14 +107,14 @@ const Dashboard = () => {
             {/* Total Profit */}
             <div className="text-white">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                   <span className="text-2xl">🤑</span>
                 </div>
                 <span className="text-sm opacity-90">Total Profit</span>
               </div>
               <div className="flex items-center gap-3">
                 <p className="text-3xl font-bold">$10.900</p>
-                <span className="bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-sm font-semibold">
+                <span className="bg-white/20 px-2 py-1 rounded-lg text-sm font-semibold">
                   +4.3%
                 </span>
               </div>
@@ -127,9 +128,11 @@ const Dashboard = () => {
         {/* Analytics Section */}
         <div className="grid grid-cols-1 gap-8 mb-8">
           {/* Recent Orders */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-800">Recent Orders</h3>
+          <div className="bg-white rounded-2xl p-6 shadow-sm max-md:p-4">
+            <div className="flex items-center justify-between mb-6 max-sm:flex-col max-sm:items-start max-sm:gap-2">
+              <h3 className="text-xl font-bold text-gray-800">
+                Recent Orders
+              </h3>
               <button className="text-sm text-gray-600 flex items-center gap-1 border border-gray-300 px-3 py-1 rounded-lg hover:bg-gray-50">
                 📅 Last 30 Days
               </button>
@@ -137,27 +140,17 @@ const Dashboard = () => {
 
             {/* Orders Table */}
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[600px]">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500">
-                      Order ID
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500">
-                      Book Title
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500">
-                      Customer
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500">
-                      Date
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500">
-                      Price
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500">
-                      Status
-                    </th>
+                    {["Order ID", "Book Title", "Customer", "Date", "Price", "Status"].map((head) => (
+                      <th
+                        key={head}
+                        className="text-left py-3 px-4 text-sm font-semibold text-gray-500"
+                      >
+                        {head}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -183,8 +176,8 @@ const Dashboard = () => {
                             order.status === "Delivered"
                               ? "bg-green-100 text-green-700"
                               : order.status === "Pending"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-red-100 text-red-700"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-red-100 text-red-700"
                           }`}
                         >
                           {order.status}
@@ -196,13 +189,11 @@ const Dashboard = () => {
               </table>
             </div>
           </div>
-
-         
         </div>
 
         {/* Transaction History */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-2xl p-6 shadow-sm max-md:p-4">
+          <div className="flex items-center justify-between mb-6 max-sm:flex-col max-sm:items-start max-sm:gap-2">
             <h3 className="text-2xl font-bold text-gray-800">
               Transaction History
             </h3>
@@ -212,38 +203,30 @@ const Dashboard = () => {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-4 mb-6">
-            <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-              Recepient ▼
-            </button>
-            <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-              Amount ▼
-            </button>
-            <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-              Status ▼
-            </button>
+          <div className="flex gap-4 mb-6 flex-wrap">
+            {["Recepient", "Amount", "Status"].map((f) => (
+              <button
+                key={f}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+              >
+                {f} ▼
+              </button>
+            ))}
           </div>
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-500">
-                    Customer
-                  </th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-500">
-                    Status
-                  </th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-500">
-                    Date
-                  </th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-500">
-                    Invoice
-                  </th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-500">
-                    People
-                  </th>
+                  {["Customer", "Status", "Date", "Invoice", "People"].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left py-4 px-4 text-sm font-semibold text-gray-500"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>

@@ -46,7 +46,7 @@ const OrderStatsCards = ({ stats }) => {
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6 max-lg:mb-0">
       {cards.map((card, index) => {
         const Icon = card.icon
         return (

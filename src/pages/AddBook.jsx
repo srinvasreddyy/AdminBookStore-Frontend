@@ -149,7 +149,7 @@ const AddBook = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white sticky top-0 z-50 border-b border-gray-200 px-8 py-4">
+      <div className="bg-white sticky top-0 z-50 max-lg:z-10 max-lg:top-11 border-b border-gray-200 px-8 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-gray-800">Add New Book</h1>
@@ -170,7 +170,7 @@ const AddBook = () => {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="p-8">
+      <form onSubmit={handleSubmit} className="p-8 max-lg:p-0">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Main Information */}

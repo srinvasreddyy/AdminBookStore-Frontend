@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Home, Layers2, Album, Plus, ShoppingBag, TvMinimal, Settings, HelpCircle } from 'lucide-react'
+import { Home, Layers2, Album, Plus, ShoppingBag, TvMinimal, Settings, HelpCircle, Menu, X } from 'lucide-react'
 import { TbCircleLetterBFilled } from "react-icons/tb"
 import { useNavigate } from "@tanstack/react-router"
 
 const Layout = ({ children }) => {
   const [activeMenu, setActiveMenu] = useState('Home')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
 
   const mainMenuItems = [
@@ -21,31 +22,46 @@ const Layout = ({ children }) => {
     { name: 'Help', icon: HelpCircle, path: '/help' },
   ]
 
+  const handleNavigate = (item) => {
+    setActiveMenu(item.name)
+    navigate({ to: item.path })
+    setSidebarOpen(false) // close sidebar on mobile
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-70 border-r border-gray-200 bg-white  flex flex-col">
+      <aside
+        className={`fixed md:static top-0 left-0 h-full bg-white border-r border-gray-200 z-50 flex flex-col w-64 transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      >
         {/* Logo */}
-        <div className="p-6 flex items-center gap-1">
-          <span><TbCircleLetterBFilled className="text-3xl" /></span>
-          <h1 className="text-sm font-bold uppercase text-gray-800">BookStore Admin</h1>
+        <div className="p-6 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TbCircleLetterBFilled className="text-3xl text-neutral-800" />
+            <h1 className="text-sm font-bold uppercase text-gray-800">BookStore Admin</h1>
+          </div>
+          {/* Close Icon (mobile only) */}
+          <button
+            className="md:hidden text-gray-700"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Main Menu */}
-        <nav className="flex-1 px-4 py-2 space-y-2">
+        <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto">
           {mainMenuItems.map((item) => {
             const Icon = item.icon
             const isActive = activeMenu === item.name
             return (
               <button
                 key={item.name}
-                onClick={() => {
-                  setActiveMenu(item.name)
-                  navigate({ to: item.path })
-                }}
+                onClick={() => handleNavigate(item)}
                 className={`w-full flex items-center cursor-pointer gap-3 px-4 py-3 rounded-md transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-neutral-700 to-neutral-800 text-white '
+                    ? 'bg-gradient-to-r from-neutral-700 to-neutral-800 text-white'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
@@ -60,17 +76,19 @@ const Layout = ({ children }) => {
             <p className="text-xs font-semibold text-gray-400 uppercase px-4 mb-3">Tools</p>
             {toolsItems.map((item) => {
               const Icon = item.icon
+              const isActive = activeMenu === item.name
               return (
                 <button
                   key={item.name}
-                  onClick={() => {
-                    setActiveMenu(item.name)
-                    navigate({ to: item.path })
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100 transition-all duration-200"
+                  onClick={() => handleNavigate(item)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-neutral-700 to-neutral-800 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span className="font-medium text-sm">{item.name}</span>
+                  <span className="font-medium text-xs">{item.name}</span>
                 </button>
               )
             })}
@@ -78,9 +96,26 @@ const Layout = ({ children }) => {
         </nav>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-auto">
-        {children}
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 bg-opacity-40 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-auto">
+        {/* Top Header (mobile toggle) */}
+        <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between md:hidden sticky top-0 z-30">
+          <button onClick={() => setSidebarOpen(true)} className="text-gray-700">
+            <Menu className="w-5 h-5" />
+          </button>
+          <h2 className="text-sm font-semibold text-gray-700">Dashboard</h2>
+          <div className="w-5" /> {/* spacer for layout balance */}
+        </header>
+
+        <div className="">{children}</div>
       </main>
     </div>
   )
