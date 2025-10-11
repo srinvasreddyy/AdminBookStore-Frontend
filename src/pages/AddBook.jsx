@@ -149,7 +149,7 @@ const AddBook = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white sticky top-0 z-50 max-lg:z-10 max-lg:top-11 border-b border-gray-200 px-8 py-4">
+      <div className="bg-white sticky top-0 z-50 max-lg:z-10 max-lg:top-11 border-b border-gray-200 px-8 py-3">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-gray-800">Add New Book</h1>
@@ -160,7 +160,7 @@ const AddBook = () => {
             <button
               type="button"
               onClick={handleReset}
-              className="flex text-sm items-center gap-2 font-bold text-white  px-4 py-2 border border-gray-300 rounded-lg bg-black hover:bg-gray-900 transition-colors"
+              className="flex text-xs items-center gap-2 font-bold text-white  px-4 py-2 border border-gray-300 rounded-lg bg-black hover:bg-gray-900 transition-colors"
             >
               <X className="w-4 h-4" />
               Reset

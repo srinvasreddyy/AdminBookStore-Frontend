@@ -10,12 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as HomepageManagementRouteImport } from './routes/homepage-management'
+import { Route as BooksManagementRouteImport } from './routes/books-management'
 import { Route as AddBooksRouteImport } from './routes/add-books'
 import { Route as IndexRouteImport } from './routes/index'
 
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomepageManagementRoute = HomepageManagementRouteImport.update({
+  id: '/homepage-management',
+  path: '/homepage-management',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BooksManagementRoute = BooksManagementRouteImport.update({
+  id: '/books-management',
+  path: '/books-management',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AddBooksRoute = AddBooksRouteImport.update({
@@ -32,30 +44,54 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/add-books': typeof AddBooksRoute
+  '/books-management': typeof BooksManagementRoute
+  '/homepage-management': typeof HomepageManagementRoute
   '/orders': typeof OrdersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/add-books': typeof AddBooksRoute
+  '/books-management': typeof BooksManagementRoute
+  '/homepage-management': typeof HomepageManagementRoute
   '/orders': typeof OrdersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/add-books': typeof AddBooksRoute
+  '/books-management': typeof BooksManagementRoute
+  '/homepage-management': typeof HomepageManagementRoute
   '/orders': typeof OrdersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/add-books' | '/orders'
+  fullPaths:
+    | '/'
+    | '/add-books'
+    | '/books-management'
+    | '/homepage-management'
+    | '/orders'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/add-books' | '/orders'
-  id: '__root__' | '/' | '/add-books' | '/orders'
+  to:
+    | '/'
+    | '/add-books'
+    | '/books-management'
+    | '/homepage-management'
+    | '/orders'
+  id:
+    | '__root__'
+    | '/'
+    | '/add-books'
+    | '/books-management'
+    | '/homepage-management'
+    | '/orders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AddBooksRoute: typeof AddBooksRoute
+  BooksManagementRoute: typeof BooksManagementRoute
+  HomepageManagementRoute: typeof HomepageManagementRoute
   OrdersRoute: typeof OrdersRoute
 }
 
@@ -66,6 +102,20 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/homepage-management': {
+      id: '/homepage-management'
+      path: '/homepage-management'
+      fullPath: '/homepage-management'
+      preLoaderRoute: typeof HomepageManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/books-management': {
+      id: '/books-management'
+      path: '/books-management'
+      fullPath: '/books-management'
+      preLoaderRoute: typeof BooksManagementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/add-books': {
@@ -88,6 +138,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddBooksRoute: AddBooksRoute,
+  BooksManagementRoute: BooksManagementRoute,
+  HomepageManagementRoute: HomepageManagementRoute,
   OrdersRoute: OrdersRoute,
 }
 export const routeTree = rootRouteImport
