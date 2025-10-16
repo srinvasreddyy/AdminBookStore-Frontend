@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   BookOpen, 
   Plus, 
@@ -16,6 +16,8 @@ import FilterBar from '../components/FilterBar'
 import BookCard from '../components/BookCard'
 import BooksTable from '../components/BooksTable'
 import { useNavigate } from '@tanstack/react-router'
+import { apiGet, apiDelete } from '../lib/api'
+import toast from 'react-hot-toast'
 
 const BookManagement = () => {
   const navigate = useNavigate()
@@ -28,125 +30,76 @@ const BookManagement = () => {
     maxPrice: ''
   })
 
-  // Sample book data
-  const [books] = useState([
-    {
-      id: 1,
-      title: 'The Great Gatsby',
-      author: 'F. Scott Fitzgerald',
-      isbn: '978-0-7432-7356-5',
-      category: 'Fiction',
-      price: 15.99,
-      salePrice: null,
-      stock: 45,
-      featured: true,
-      bestseller: false,
-      image: null
-    },
-    {
-      id: 2,
-      title: 'To Kill a Mockingbird',
-      author: 'Harper Lee',
-      isbn: '978-0-06-112008-4',
-      category: 'Fiction',
-      price: 14.99,
-      salePrice: 12.99,
-      stock: 8,
-      featured: false,
-      bestseller: true,
-      image: null
-    },
-    {
-      id: 3,
-      title: '1984',
-      author: 'George Orwell',
-      isbn: '978-0-452-28423-4',
-      category: 'Fiction',
-      price: 16.99,
-      salePrice: null,
-      stock: 32,
-      featured: true,
-      bestseller: true,
-      image: null
-    },
-    {
-      id: 4,
-      title: 'Sapiens',
-      author: 'Yuval Noah Harari',
-      isbn: '978-0-06-231609-7',
-      category: 'Non-Fiction',
-      price: 24.99,
-      salePrice: 19.99,
-      stock: 15,
-      featured: false,
-      bestseller: false,
-      image: null
-    },
-    {
-      id: 5,
-      title: 'The Hobbit',
-      author: 'J.R.R. Tolkien',
-      isbn: '978-0-547-92822-7',
-      category: 'Fantasy',
-      price: 18.99,
-      salePrice: null,
-      stock: 0,
-      featured: false,
-      bestseller: false,
-      image: null
-    },
-    {
-      id: 6,
-      title: 'Atomic Habits',
-      author: 'James Clear',
-      isbn: '978-0-7352-1129-2',
-      category: 'Self-Help',
-      price: 27.99,
-      salePrice: 22.99,
-      stock: 28,
-      featured: true,
-      bestseller: true,
-      image: null
-    },
-    {
-      id: 7,
-      title: 'The Psychology of Money',
-      author: 'Morgan Housel',
-      isbn: '978-0-85719-839-1',
-      category: 'Business',
-      price: 23.99,
-      salePrice: null,
-      stock: 19,
-      featured: false,
-      bestseller: true,
-      image: null
-    },
-    {
-      id: 8,
-      title: 'Educated',
-      author: 'Tara Westover',
-      isbn: '978-0-399-59050-4',
-      category: 'Biography',
-      price: 21.99,
-      salePrice: 17.99,
-      stock: 6,
-      featured: false,
-      bestseller: false,
-      image: null
-    }
-  ])
+  // API state
+  const [books, setBooks] = useState([])
+  const [stats, setStats] = useState({
+    totalBooks: 0,
+    totalValue: 0,
+    lowStock: 0,
+    outOfStock: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [loadingStats, setLoadingStats] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    totalPages: 1,
+    totalDocs: 0
+  })
 
-  // Calculate stats
-  const stats = {
-    totalBooks: books.length,
-    totalValue: books.reduce((sum, book) => sum + (book.price * book.stock), 0),
-    lowStock: books.filter(book => book.stock > 0 && book.stock <= 10).length,
-    outOfStock: books.filter(book => book.stock === 0).length
+  useEffect(() => {
+    fetchBooks()
+    fetchStats()
+  }, [])
+
+  const fetchBooks = async (page = 1) => {
+    try {
+      setLoading(true)
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: pagination.limit.toString(),
+        ...filters
+      })
+
+      const response = await apiGet(`/books/admin/my-books?${queryParams}`)
+      setBooks(response.data.docs)
+      setPagination({
+        page: response.data.page,
+        limit: response.data.limit,
+        totalPages: response.data.totalPages,
+        totalDocs: response.data.totalDocs
+      })
+    } catch (error) {
+      console.error('Error fetching books:', error)
+      toast.error('Failed to load books')
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      setLoadingStats(true)
+      const response = await apiGet('/dashboard/admin/book-stats')
+      const statsData = response.data
+      setStats({
+        totalBooks: statsData.totalBooks,
+        totalValue: statsData.inventoryValue,
+        lowStock: statsData.lowStockCount,
+        outOfStock: statsData.outOfStockCount
+      })
+    } catch (error) {
+      console.error('Error fetching stats:', error)
+      toast.error('Failed to load statistics')
+    } finally {
+      setLoadingStats(false)
+    }
   }
 
   const handleApplyFilters = () => {
-    console.log('Applying filters:', filters)
-    // Implement filter logic here
+    fetchBooks(1) // Reset to first page when applying filters
   }
 
   const handleClearFilters = () => {
@@ -157,6 +110,7 @@ const BookManagement = () => {
       minPrice: '',
       maxPrice: ''
     })
+    fetchBooks(1)
   }
 
   const handleViewBook = (book) => {
@@ -165,14 +119,22 @@ const BookManagement = () => {
   }
 
   const handleEditBook = (book) => {
-    console.log('Editing book:', book)
-    navigate({ to: '/add-books', search: { id: book.id } })
+    navigate({ to: '/add-books', search: { id: book._id } })
   }
 
-  const handleDeleteBook = (book) => {
-    if (window.confirm(`Are you sure you want to delete "${book.title}"?`)) {
-      console.log('Deleting book:', book)
-      // Implement delete logic here
+  const handleDeleteBook = async (book) => {
+    if (!window.confirm(`Are you sure you want to delete "${book.title}"?`)) {
+      return
+    }
+
+    try {
+      await apiDelete(`/books/${book._id}`)
+      toast.success('Book deleted successfully')
+      fetchBooks(pagination.page) // Refresh current page
+      fetchStats() // Update stats
+    } catch (error) {
+      console.error('Error deleting book:', error)
+      toast.error(error.message || 'Failed to delete book')
     }
   }
 
@@ -191,8 +153,9 @@ const BookManagement = () => {
   }
 
   const handleRefresh = () => {
-    console.log('Refreshing books...')
-    // Implement refresh logic
+    setRefreshing(true)
+    fetchBooks(pagination.page)
+    fetchStats()
   }
 
   return (
@@ -212,9 +175,10 @@ const BookManagement = () => {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleRefresh}
-              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              disabled={refreshing}
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
@@ -249,7 +213,7 @@ const BookManagement = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 min-w-[320px]">
             <StatsCard
               title="Total Books"
-              value={stats.totalBooks}
+              value={loadingStats ? '...' : stats.totalBooks}
               subtitle="In catalog"
               icon={BookOpen}
               color="blue"
@@ -257,7 +221,7 @@ const BookManagement = () => {
             />
             <StatsCard
               title="Total Inventory Value"
-              value={`$${stats.totalValue.toFixed(2)}`}
+              value={loadingStats ? '...' : `$${stats.totalValue.toFixed(2)}`}
               subtitle="Stock value"
               icon={DollarSign}
               color="green"
@@ -265,7 +229,7 @@ const BookManagement = () => {
             />
             <StatsCard
               title="Low Stock Items"
-              value={stats.lowStock}
+              value={loadingStats ? '...' : stats.lowStock}
               subtitle="Need restocking"
               icon={Package}
               color="orange"
@@ -273,7 +237,7 @@ const BookManagement = () => {
             />
             <StatsCard
               title="Out of Stock"
-              value={stats.outOfStock}
+              value={loadingStats ? '...' : stats.outOfStock}
               subtitle="Unavailable"
               icon={TrendingUp}
               color="purple"
@@ -295,7 +259,7 @@ const BookManagement = () => {
         {/* View Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <h2 className="text-lg sm:text-xl font-bold text-gray-800">
-            All Books ({books.length})
+            All Books ({loading ? '...' : pagination.totalDocs})
           </h2>
           <div className="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm border border-gray-200 w-fit">
             <button
@@ -324,12 +288,23 @@ const BookManagement = () => {
         </div>
 
         {/* Books Display */}
-        {viewMode === 'grid' ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+          </div>
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {books.map((book) => (
               <BookCard
-                key={book.id}
-                book={book}
+                key={book._id}
+                book={{
+                  ...book,
+                  id: book._id,
+                  category: book.category?.name || 'Uncategorized',
+                  image: book.coverImages?.[0] || null,
+                  featured: book.isFeatured,
+                  bestseller: book.isBestSeller
+                }}
                 onView={handleViewBook}
                 onEdit={handleEditBook}
                 onDelete={handleDeleteBook}
@@ -339,7 +314,14 @@ const BookManagement = () => {
         ) : (
           <div className="w-full overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
             <BooksTable
-              books={books}
+              books={books.map(book => ({
+                ...book,
+                id: book._id,
+                category: book.category?.name || 'Uncategorized',
+                image: book.coverImages?.[0] || null,
+                featured: book.isFeatured,
+                bestseller: book.isBestSeller
+              }))}
               onView={handleViewBook}
               onEdit={handleEditBook}
               onDelete={handleDeleteBook}
@@ -347,8 +329,31 @@ const BookManagement = () => {
           </div>
         )}
 
+        {/* Pagination */}
+        {!loading && pagination.totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-6">
+            <button
+              onClick={() => fetchBooks(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600">
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <button
+              onClick={() => fetchBooks(pagination.page + 1)}
+              disabled={pagination.page >= pagination.totalPages}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
         {/* Empty State */}
-        {books.length === 0 && (
+        {!loading && books.length === 0 && (
           <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center border border-gray-200">
             <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">No books found</h3>

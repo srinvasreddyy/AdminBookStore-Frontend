@@ -1,12 +1,15 @@
 import React, { useState } from 'react'
-import { Home, Layers2, Album, Plus, ShoppingBag, TvMinimal, Settings, HelpCircle, Menu, X } from 'lucide-react'
+import { Home, Layers2, Album, Plus, ShoppingBag, TvMinimal, Settings, HelpCircle, Menu, X, LogOut, Monitor } from 'lucide-react'
 import { TbCircleLetterBFilled } from "react-icons/tb"
 import { useNavigate } from "@tanstack/react-router"
+import { useAuth } from '../contexts/AuthContext'
+import toast from 'react-hot-toast'
 
 const Layout = ({ children }) => {
   const [activeMenu, setActiveMenu] = useState('Home')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
+  const { logout, user } = useAuth()
 
   const mainMenuItems = [
     { name: 'Home', icon: Home, path: '/' },
@@ -14,7 +17,8 @@ const Layout = ({ children }) => {
     { name: 'Add Books', icon: Plus, path: '/add-books' },
     { name: 'Books Management', icon: Album, path: '/books-management' },
     { name: 'Category Management', icon: Layers2, path: '/category-management' },
-    { name: 'HomePage Management', icon: TvMinimal, path: '/homepage-management' },
+    { name: 'Add HomePage Content', icon: TvMinimal, path: '/homepage-management' },
+    { name: 'Manage HomePage', icon: Monitor, path: '/manage-homepage' },
   ]
 
   const toolsItems = [
@@ -26,6 +30,12 @@ const Layout = ({ children }) => {
     setActiveMenu(item.name)
     navigate({ to: item.path })
     setSidebarOpen(false) // close sidebar on mobile
+  }
+
+  const handleLogout = () => {
+    logout()
+    toast.success('Logged out successfully')
+    navigate({ to: '/login' })
   }
 
   return (
@@ -94,6 +104,32 @@ const Layout = ({ children }) => {
             })}
           </div>
         </nav>
+
+        {/* User Info & Logout */}
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 bg-neutral-100 rounded-full flex items-center justify-center">
+              <span className="text-sm font-semibold text-neutral-600">
+                {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'A'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-gray-700 truncate">
+                {user?.fullName || 'Admin User'}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {user?.email}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-all duration-200"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="font-medium text-xs">Logout</span>
+          </button>
+        </div>
       </aside>
 
       {/* Overlay for mobile */}

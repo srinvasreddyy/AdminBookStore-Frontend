@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useId } from 'react'
 import { Upload, X, Image as ImageIcon } from 'lucide-react'
 
-const ImageUpload = ({ label, onImageSelect, required = false }) => {
-  const [preview, setPreview] = useState(null)
+const ImageUpload = ({ label, onImageSelect, required = false, existingImageUrl = null }) => {
+  const id = useId()
+  const inputId = `image-upload-${id}`
+  const [preview, setPreview] = useState(existingImageUrl || null)
   const [isDragging, setIsDragging] = useState(false)
 
   const handleFileChange = (e) => {
@@ -68,10 +70,10 @@ const ImageUpload = ({ label, onImageSelect, required = false }) => {
             accept="image/*"
             onChange={handleFileChange}
             className="hidden"
-            id="image-upload"
+            id={inputId}
             required={required}
           />
-          <label htmlFor="image-upload" className="cursor-pointer">
+          <label htmlFor={inputId} className="cursor-pointer">
             <div className="flex flex-col items-center">
               <Upload className="w-12 h-12 text-gray-400 mb-3" />
               <p className="text-gray-600 font-medium mb-1">

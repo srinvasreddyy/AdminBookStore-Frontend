@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as ManageHomepageRouteImport } from './routes/manage-homepage'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as HomepageManagementRouteImport } from './routes/homepage-management'
 import { Route as CategoryManagementRouteImport } from './routes/category-management'
 import { Route as BooksManagementRouteImport } from './routes/books-management'
@@ -19,6 +21,16 @@ import { Route as IndexRouteImport } from './routes/index'
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManageHomepageRoute = ManageHomepageRouteImport.update({
+  id: '/manage-homepage',
+  path: '/manage-homepage',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomepageManagementRoute = HomepageManagementRouteImport.update({
@@ -53,6 +65,8 @@ export interface FileRoutesByFullPath {
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
   '/homepage-management': typeof HomepageManagementRoute
+  '/login': typeof LoginRoute
+  '/manage-homepage': typeof ManageHomepageRoute
   '/orders': typeof OrdersRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +75,8 @@ export interface FileRoutesByTo {
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
   '/homepage-management': typeof HomepageManagementRoute
+  '/login': typeof LoginRoute
+  '/manage-homepage': typeof ManageHomepageRoute
   '/orders': typeof OrdersRoute
 }
 export interface FileRoutesById {
@@ -70,6 +86,8 @@ export interface FileRoutesById {
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
   '/homepage-management': typeof HomepageManagementRoute
+  '/login': typeof LoginRoute
+  '/manage-homepage': typeof ManageHomepageRoute
   '/orders': typeof OrdersRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +98,8 @@ export interface FileRouteTypes {
     | '/books-management'
     | '/category-management'
     | '/homepage-management'
+    | '/login'
+    | '/manage-homepage'
     | '/orders'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +108,8 @@ export interface FileRouteTypes {
     | '/books-management'
     | '/category-management'
     | '/homepage-management'
+    | '/login'
+    | '/manage-homepage'
     | '/orders'
   id:
     | '__root__'
@@ -96,6 +118,8 @@ export interface FileRouteTypes {
     | '/books-management'
     | '/category-management'
     | '/homepage-management'
+    | '/login'
+    | '/manage-homepage'
     | '/orders'
   fileRoutesById: FileRoutesById
 }
@@ -105,6 +129,8 @@ export interface RootRouteChildren {
   BooksManagementRoute: typeof BooksManagementRoute
   CategoryManagementRoute: typeof CategoryManagementRoute
   HomepageManagementRoute: typeof HomepageManagementRoute
+  LoginRoute: typeof LoginRoute
+  ManageHomepageRoute: typeof ManageHomepageRoute
   OrdersRoute: typeof OrdersRoute
 }
 
@@ -115,6 +141,20 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manage-homepage': {
+      id: '/manage-homepage'
+      path: '/manage-homepage'
+      fullPath: '/manage-homepage'
+      preLoaderRoute: typeof ManageHomepageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/homepage-management': {
@@ -161,6 +201,8 @@ const rootRouteChildren: RootRouteChildren = {
   BooksManagementRoute: BooksManagementRoute,
   CategoryManagementRoute: CategoryManagementRoute,
   HomepageManagementRoute: HomepageManagementRoute,
+  LoginRoute: LoginRoute,
+  ManageHomepageRoute: ManageHomepageRoute,
   OrdersRoute: OrdersRoute,
 }
 export const routeTree = rootRouteImport

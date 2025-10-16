@@ -53,7 +53,8 @@ const CarouselImageItem = ({
           <ImageUpload
             label={`Carousel Image ${index + 1}`}
             onImageSelect={(file) => onUpdate(carousel.id, 'image', file)}
-            required
+            existingImageUrl={typeof carousel.image === 'string' ? carousel.image : null}
+            required={!(typeof carousel.image === 'string' && carousel.image)}
           />
           {errors[`carousel_${carousel.id}_image`] && (
             <p className="text-red-500 text-xs mt-1">{errors[`carousel_${carousel.id}_image`]}</p>

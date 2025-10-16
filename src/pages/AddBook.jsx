@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   BookOpen, 
   FileText, 
@@ -13,9 +13,13 @@ import {
 } from 'lucide-react'
 import FormSection from '../components/FormSection'
 import FormInput from '../components/FormInput'
-import ImageUpload from '../components/ImageUpload'
+import MultipleImageUpload from '../components/MultipleImageUpload'
+import { apiPostForm, apiGet, apiPatch } from '../lib/api'
+import toast from 'react-hot-toast'
 
-const AddBook = () => {
+const AddBook = ({ bookId }) => {
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     author: '',
@@ -24,46 +28,97 @@ const AddBook = () => {
     publicationDate: '',
     category: '',
     language: '',
-    pages: '',
+    numberOfPages: '',
     price: '',
     salePrice: '',
     stock: '',
     format: '',
-    description: '',
+    fullDescription: '',
     shortDescription: '',
     tags: '',
     featured: false,
     bestseller: false
   })
 
-  const [coverImage, setCoverImage] = useState(null)
+  const [coverImages, setCoverImages] = useState([])
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [categories, setCategories] = useState([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
 
-  const categories = [
-    { value: 'fiction', label: 'Fiction' },
-    { value: 'non-fiction', label: 'Non-Fiction' },
-    { value: 'science', label: 'Science' },
-    { value: 'technology', label: 'Technology' },
-    { value: 'biography', label: 'Biography' },
-    { value: 'history', label: 'History' },
-    { value: 'self-help', label: 'Self-Help' },
-    { value: 'business', label: 'Business' },
-    { value: 'children', label: 'Children' },
-    { value: 'romance', label: 'Romance' },
-    { value: 'mystery', label: 'Mystery' },
-    { value: 'fantasy', label: 'Fantasy' }
-  ]
+  useEffect(() => {
+    fetchCategories()
+    if (bookId) {
+      setIsEditMode(true)
+      fetchBookData(bookId)
+    }
+  }, [bookId])
+
+  const fetchBookData = async (id) => {
+    try {
+      setLoading(true)
+      const response = await apiGet(`/books/${id}`)
+      const book = response.data
+
+      // Populate form with existing data
+      setFormData({
+        title: book.title || '',
+        author: book.author || '',
+        isbn: book.isbn || '',
+        publisher: book.publisher || '',
+        publicationDate: book.publicationDate ? new Date(book.publicationDate).toISOString().split('T')[0] : '',
+        category: book.category?._id || '',
+        language: book.language || '',
+        numberOfPages: book.numberOfPages || '',
+        price: book.price || '',
+        salePrice: book.salePrice || '',
+        stock: book.stock || '',
+        format: book.format || '',
+        fullDescription: book.fullDescription || '',
+        shortDescription: book.shortDescription || '',
+        tags: book.tags?.map(tag => tag.name).join(', ') || '',
+        featured: book.isFeatured || false,
+        bestseller: book.isBestSeller || false
+      })
+
+      // Set existing cover images (these will be URLs)
+      setCoverImages(book.coverImages || [])
+    } catch (error) {
+      console.error('Error fetching book data:', error)
+      toast.error('Failed to load book data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCategories = async () => {
+    try {
+      const response = await apiGet('/categories/selectable')
+      setCategories(response.data.filter(cat => !cat.deleted))
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      toast.error('Failed to load categories')
+    } finally {
+      setLoadingCategories(false)
+    }
+  }
+
+  const categoryOptions = categories.map(cat => ({
+    value: cat._id,
+    label: cat.name
+  }))
 
   const formats = [
-    { value: 'hardcover', label: 'Hardcover' },
-    { value: 'paperback', label: 'Paperback' },
-    { value: 'ebook', label: 'E-Book' },
-    { value: 'audiobook', label: 'Audiobook' }
+    { value: 'Hardcover', label: 'Hardcover' },
+    { value: 'Paperback', label: 'Paperback' },
+    // { value: 'ebook', label: 'E-Book' },
+    // { value: 'audiobook', label: 'Audiobook' }
   ]
 
   const languages = [
     { value: 'english', label: 'English' },
+    { value: 'telugu', label: 'Telugu' },
+    { value: 'hindi', label: 'Hindi' },
     { value: 'spanish', label: 'Spanish' },
     { value: 'french', label: 'French' },
     { value: 'german', label: 'German' },
@@ -79,8 +134,8 @@ const AddBook = () => {
     }))
   }
 
-  const handleImageSelect = (file) => {
-    setCoverImage(file)
+  const handleImagesSelect = (files) => {
+    setCoverImages(files)
   }
 
   const validateForm = () => {
@@ -92,7 +147,8 @@ const AddBook = () => {
     if (!formData.category) newErrors.category = 'Category is required'
     if (!formData.price) newErrors.price = 'Price is required'
     if (!formData.stock) newErrors.stock = 'Stock quantity is required'
-    if (!coverImage) newErrors.coverImage = 'Cover image is required'
+    if (!formData.fullDescription.trim()) newErrors.fullDescription = 'Full description is required'
+    if (!isEditMode && coverImages.length === 0) newErrors.coverImages = 'At least one cover image is required'
     
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -107,53 +163,98 @@ const AddBook = () => {
 
     setIsSubmitting(true)
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Form Data:', formData)
-      console.log('Cover Image:', coverImage)
-      alert('Book added successfully!')
+    try {
+      const formDataToSend = new FormData()
+      
+      // Append form data
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== '' && formData[key] !== null && formData[key] !== undefined) {
+          formDataToSend.append(key, formData[key])
+        }
+      })
+      
+      // For edit mode, only append new images, existing ones are handled by the backend
+      if (isEditMode) {
+        // Check if new images were selected (File objects vs URLs)
+        const newImages = coverImages.filter(img => img instanceof File)
+        newImages.forEach((image) => {
+          formDataToSend.append('coverImages', image)
+        })
+      } else {
+        // For create mode, append all images
+        coverImages.forEach((image) => {
+          formDataToSend.append('coverImages', image)
+        })
+      }
+      
+      if (isEditMode) {
+        await apiPatch(`/books/${bookId}`, Object.fromEntries(formDataToSend))
+        toast.success('Book updated successfully!')
+      } else {
+        await apiPostForm('/books', formDataToSend)
+        toast.success('Book created successfully!')
+        handleReset()
+      }
+    } catch (error) {
+      console.error('Error saving book:', error)
+      toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'create'} book`)
+    } finally {
       setIsSubmitting(false)
-      handleReset()
-    }, 1500)
+    }
   }
 
   const handleReset = () => {
-    setFormData({
-      title: '',
-      author: '',
-      isbn: '',
-      publisher: '',
-      publicationDate: '',
-      category: '',
-      language: '',
-      pages: '',
-      price: '',
-      salePrice: '',
-      stock: '',
-      format: '',
-      description: '',
-      shortDescription: '',
-      tags: '',
-      featured: false,
-      bestseller: false
-    })
-    setCoverImage(null)
-    setErrors({})
-  }
-
-  const handlePreview = () => {
-    console.log('Preview book:', formData)
-    // Implement preview functionality
+    if (isEditMode) {
+      // In edit mode, refetch the original data
+      fetchBookData(bookId)
+    } else {
+      // In create mode, reset to empty
+      setFormData({
+        title: '',
+        author: '',
+        isbn: '',
+        publisher: '',
+        publicationDate: '',
+        category: '',
+        language: '',
+        numberOfPages: '',
+        price: '',
+        salePrice: '',
+        stock: '',
+        format: '',
+        fullDescription: '',
+        shortDescription: '',
+        tags: '',
+        featured: false,
+        bestseller: false
+      })
+      setCoverImages([])
+      setErrors({})
+    }
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 flex items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+            <span className="text-lg font-semibold">Loading book data...</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white sticky top-0 z-50 max-lg:z-10 max-lg:top-11 border-b border-gray-200 px-8 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-gray-800">Add New Book</h1>
-            <p className="text-gray-500 mt-0 text-sm">Fill in the details to add a new book to the store</p>
+            <h1 className="text-lg font-bold text-gray-800">
+              {isEditMode ? 'Edit Book' : 'Add New Book'}
+            </h1>
+            <p className="text-gray-500 mt-0 text-sm">
+              {isEditMode ? 'Update the book details below' : 'Fill in the details to add a new book to the store'}
+            </p>
           </div>
           <div className="flex gap-3">
            
@@ -223,11 +324,11 @@ const AddBook = () => {
                     icon={Calendar}
                   />
                   <FormInput
-                    label="Number of Pages"
-                    name="pages"
+                    label="Number of numberOfPages"
+                    name="numberOfPages"
                     type="number"
                     placeholder="e.g., 350"
-                    value={formData.pages}
+                    value={formData.numberOfPages}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -244,7 +345,8 @@ const AddBook = () => {
                     onChange={handleInputChange}
                     required
                     error={errors.category}
-                    options={categories}
+                    options={categoryOptions}
+                    disabled={loadingCategories}
                   />
                   <FormInput
                     label="Format"
@@ -272,18 +374,20 @@ const AddBook = () => {
                   name="shortDescription"
                   type="textarea"
                   rows={3}
-                  placeholder="Brief description for listing pages (max 200 characters)"
+                  placeholder="Brief description for listing numberOfPages (max 200 characters)"
                   value={formData.shortDescription}
                   onChange={handleInputChange}
                 />
                 <FormInput
                   label="Full Description"
-                  name="description"
+                  name="fullDescription"
                   type="textarea"
                   rows={6}
                   placeholder="Detailed description of the book, its content, and what readers can expect..."
-                  value={formData.description}
+                  value={formData.fullDescription}
                   onChange={handleInputChange}
+                  required
+                  error={errors.fullDescription}
                 />
                 <FormInput
                   label="Tags"
@@ -298,15 +402,17 @@ const AddBook = () => {
 
             {/* Right Column - Pricing & Media */}
             <div className="space-y-6">
-              {/* Cover Image */}
-              <FormSection title="Cover Image" icon={BookOpen}>
-                <ImageUpload
-                  label="Book Cover"
-                  onImageSelect={handleImageSelect}
-                  required
+              {/* Cover Images */}
+              <FormSection title="Cover Images" icon={BookOpen}>
+                <MultipleImageUpload
+                  label="Book Cover Images"
+                  onImagesSelect={handleImagesSelect}
+                  required={!isEditMode}
+                  maxImages={5}
+                  existingImages={isEditMode ? coverImages.filter(img => typeof img === 'string') : []}
                 />
-                {errors.coverImage && (
-                  <p className="text-red-500 text-xs mt-1">{errors.coverImage}</p>
+                {errors.coverImages && (
+                  <p className="text-red-500 text-xs mt-1">{errors.coverImages}</p>
                 )}
               </FormSection>
 
@@ -398,12 +504,12 @@ const AddBook = () => {
                   {isSubmitting ? (
                     <>
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Saving...
+                      {isEditMode ? 'Updating...' : 'Saving...'}
                     </>
                   ) : (
                     <>
                       <Save className="w-5 h-5" />
-                      Save Book
+                      {isEditMode ? 'Update Book' : 'Save Book'}
                     </>
                   )}
                 </button>

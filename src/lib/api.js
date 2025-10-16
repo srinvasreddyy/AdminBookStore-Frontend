@@ -1,0 +1,131 @@
+export const API_BASE = '/api/v1';
+
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  return headers;
+};
+
+export async function apiGet(path) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'GET',
+    headers: getHeaders(),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`Request failed (${response.status}): ${text}`);
+  }
+
+  return response.json();
+}
+
+export async function apiPost(path, data) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: getHeaders(),
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `Request failed (${response.status})`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {
+      // If response is not JSON, use the text
+      const text = await response.text().catch(() => '');
+      if (text) errorMessage = text;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
+export async function apiPostForm(path, formData) {
+  const headers = {};
+  
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const formResponse = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers,
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!formResponse.ok) {
+    let errorMessage = `Request failed (${formResponse.status})`;
+    try {
+      const errorData = await formResponse.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {
+      // If response is not JSON, use the text
+      const text = await formResponse.text().catch(() => '');
+      if (text) errorMessage = text;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return formResponse.json();
+}
+
+export async function apiDelete(path) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    let errorMessage = `Request failed (${response.status})`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {
+      // If response is not JSON, use the text
+      const text = await response.text().catch(() => '');
+      if (text) errorMessage = text;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
+export async function apiPatch(path, data) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    let errorMessage = `Request failed (${response.status})`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {
+      // If response is not JSON, use the text
+      const text = await response.text().catch(() => '');
+      if (text) errorMessage = text;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
