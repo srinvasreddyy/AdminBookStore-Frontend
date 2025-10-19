@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Edit, Trash2, Plus, RefreshCw, Image, Video, Play } from 'lucide-react'
+import { Edit, Plus, RefreshCw, Image, Video, Play } from 'lucide-react'
 import { apiGet, apiDelete, apiPatch } from '../lib/api'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
@@ -204,20 +204,6 @@ const ManageHomePage = () => {
                     <div className="relative">
                       <img src={item.imageUrl} alt={item.title} className="w-full h-48 object-cover" />
                       <div className="absolute inset-0 bg-black/10 bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => startEdit('carousel', item)}
-                          className="opacity-0 group-hover:opacity-100 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-all duration-200"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => removeCarouselImage(item._id)}
-                          className="opacity-0 group-hover:opacity-100 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-200"
-                          title="Remove"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       </div>
                     </div>
                     <div className="p-4">
@@ -227,21 +213,21 @@ const ManageHomePage = () => {
                             type="text"
                             value={editForm.title || ''}
                             onChange={e => handleEditFormChange('title', e.target.value)}
-                            className="w-full px-3 py-2 border border-neutral-300 border border-neutral-300-gray-300 rounded-md text-sm"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
                             placeholder="Title"
                           />
                           <input
                             type="text"
                             value={editForm.subtitle || ''}
                             onChange={e => handleEditFormChange('subtitle', e.target.value)}
-                            className="w-full px-3 py-2 border border-neutral-300 border border-neutral-300-gray-300 rounded-md text-sm"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
                             placeholder="Subtitle"
                           />
                           <input
                             type="text"
                             value={editForm.bookLink || ''}
                             onChange={e => handleEditFormChange('bookLink', e.target.value)}
-                            className="w-full px-3 py-2 border border-neutral-300 border border-neutral-300-gray-300 rounded-md text-sm"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
                             placeholder="Book Link"
                           />
                           <div className="flex gap-2">
@@ -264,6 +250,20 @@ const ManageHomePage = () => {
                           <h3 className="font-semibold text-neutral-800 mb-1">{item.title}</h3>
                           {item.subtitle && <p className="text-sm text-neutral-600 mb-2">{item.subtitle}</p>}
                           {item.bookLink && <p className="text-xs text-blue-600 truncate">Link: {item.bookLink}</p>}
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={() => startEdit('carousel', item)}
+                              className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => removeCarouselImage(item._id)}
+                              className="px-3 py-1 bg-red-500 font-semibold text-white text-sm rounded hover:bg-red-600"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </>
                       )}
                     </div>
@@ -298,20 +298,6 @@ const ManageHomePage = () => {
                         />
                       </div>
                       <div className="absolute inset-0 bg-black/20 bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => startEdit('youtube', item)}
-                          className="opacity-0 group-hover:opacity-100 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-all duration-200"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => removeYoutubeVideo(item._id)}
-                          className="opacity-0 group-hover:opacity-100 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-200"
-                          title="Remove"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       </div>
                     </div>
                     <div className="p-4">
@@ -321,13 +307,13 @@ const ManageHomePage = () => {
                             type="text"
                             value={editForm.title || ''}
                             onChange={e => handleEditFormChange('title', e.target.value)}
-                            className="w-full px-3 py-2 border border-neutral-300 border border-neutral-300-gray-300 rounded-md text-sm"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
                             placeholder="Title"
                           />
                           <textarea
                             value={editForm.description || ''}
                             onChange={e => handleEditFormChange('description', e.target.value)}
-                            className="w-full px-3 py-2 border border-neutral-300 border border-neutral-300-gray-300 rounded-md text-sm"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
                             placeholder="Description"
                             rows="3"
                           />
@@ -335,7 +321,7 @@ const ManageHomePage = () => {
                             type="text"
                             value={editForm.videoUrl || ''}
                             onChange={e => handleEditFormChange('videoUrl', e.target.value)}
-                            className="w-full px-3 py-2 border border-neutral-300 border border-neutral-300-gray-300 rounded-md text-sm"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
                             placeholder="YouTube URL"
                           />
                           <div className="flex gap-2">
@@ -357,6 +343,20 @@ const ManageHomePage = () => {
                         <>
                           <h3 className="font-semibold text-neutral-800 mb-1">{item.title}</h3>
                           {item.description && <p className="text-sm text-neutral-600">{item.description}</p>}
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={() => startEdit('youtube', item)}
+                              className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => removeYoutubeVideo(item._id)}
+                              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </>
                       )}
                     </div>
@@ -382,20 +382,6 @@ const ManageHomePage = () => {
                     <div className="relative">
                       <video src={item.videoUrl} className="w-full h-48 object-cover" controls />
                       <div className="absolute inset-0 bg-black/20 bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => startEdit('shorts', item)}
-                          className="opacity-0 group-hover:opacity-100 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-all duration-200"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => removeShortVideo(item._id)}
-                          className="opacity-0 group-hover:opacity-100 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-200"
-                          title="Remove"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       </div>
                     </div>
                     <div className="p-4">
@@ -405,13 +391,13 @@ const ManageHomePage = () => {
                             type="text"
                             value={editForm.title || ''}
                             onChange={e => handleEditFormChange('title', e.target.value)}
-                            className="w-full px-3 py-2 border border-neutral-300 border border-neutral-300-gray-300 rounded-md text-sm"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
                             placeholder="Title"
                           />
                           <textarea
                             value={editForm.description || ''}
                             onChange={e => handleEditFormChange('description', e.target.value)}
-                            className="w-full px-3 py-2 border border-neutral-300 border border-neutral-300-gray-300 rounded-md text-sm"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
                             placeholder="Description"
                             rows="3"
                           />
@@ -435,6 +421,20 @@ const ManageHomePage = () => {
                           <h3 className="font-semibold text-neutral-800 mb-1">{item.title}</h3>
                           {item.description && <p className="text-sm text-neutral-600">{item.description}</p>}
                           <p className="text-xs text-neutral-500 mt-1">Duration: {Math.round(item.duration)}s</p>
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={() => startEdit('shorts', item)}
+                              className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => removeShortVideo(item._id)}
+                              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </>
                       )}
                     </div>

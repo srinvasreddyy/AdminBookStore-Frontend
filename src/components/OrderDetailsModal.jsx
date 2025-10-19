@@ -161,7 +161,7 @@ const OrderDetailsModal = ({ order, onClose, onUpdate }) => {
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600 mb-2">Total Amount</p>
-              <p className="text-2xl font-bold text-indigo-600">${order.finalAmount?.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-indigo-600">${(order.finalAmount || order.total)?.toFixed(2) || '0.00'}</p>
             </div>
           </div>
 
@@ -177,15 +177,15 @@ const OrderDetailsModal = ({ order, onClose, onUpdate }) => {
               <div className="space-y-3">
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Name</p>
-                  <p className="font-semibold text-gray-800">{order.user?.name || 'N/A'}</p>
+                  <p className="font-semibold text-gray-800">{order.user?.name || order.customer || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Email</p>
-                  <p className="text-gray-700">{order.user?.email || 'N/A'}</p>
+                  <p className="text-gray-700">{order.user?.email || order.email || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Phone</p>
-                  <p className="text-gray-700">+1 (555) 123-4567</p>
+                  <p className="text-gray-700">{order.shippingAddress?.phone || 'N/A'}</p>
                 </div>
               </div>
             </div>
@@ -199,10 +199,16 @@ const OrderDetailsModal = ({ order, onClose, onUpdate }) => {
                 <h3 className="font-bold text-gray-800">Shipping Address</h3>
               </div>
               <div className="space-y-1 text-gray-700">
-                <p>123 Main Street</p>
-                <p>Apt 4B</p>
-                <p>New York, NY 10001</p>
-                <p>United States</p>
+                {order.shippingAddress ? (
+                  <>
+                    <p className="font-semibold">{order.shippingAddress.fullName || 'N/A'}</p>
+                    <p>{order.shippingAddress.address || 'N/A'}</p>
+                    <p>{order.shippingAddress.city || 'N/A'}, {order.shippingAddress.state || 'N/A'} {order.shippingAddress.zip || 'N/A'}</p>
+                    <p>{order.shippingAddress.country || 'N/A'}</p>
+                  </>
+                ) : (
+                  <p className="text-gray-500">No shipping address available</p>
+                )}
               </div>
             </div>
           </div>
@@ -216,20 +222,20 @@ const OrderDetailsModal = ({ order, onClose, onUpdate }) => {
               <h3 className="font-bold text-gray-800">Order Items</h3>
             </div>
             <div className="space-y-3">
-              {order.items?.map((item, index) => (
+              {(order.items || order.books || []).map((item, index) => (
                 <div key={index} className="flex items-center justify-between bg-white p-4 rounded-lg">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-20 bg-gradient-to-br from-indigo-200 to-purple-200 rounded-lg flex items-center justify-center">
                       <span className="text-2xl">📚</span>
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-800">{item.book?.title || 'Book Title'}</p>
+                      <p className="font-semibold text-gray-800">{item.book?.title || item.title || 'Book Title'}</p>
                       <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-800">${(item.priceAtPurchase * item.quantity).toFixed(2)}</p>
-                    <p className="text-sm text-gray-500">${item.priceAtPurchase?.toFixed(2)} each</p>
+                    <p className="font-bold text-gray-800">${((item.priceAtPurchase || item.price) * item.quantity).toFixed(2)}</p>
+                    <p className="text-sm text-gray-500">${(item.priceAtPurchase || item.price)?.toFixed(2)} each</p>
                   </div>
                 </div>
               ))}
@@ -247,7 +253,7 @@ const OrderDetailsModal = ({ order, onClose, onUpdate }) => {
             <div className="space-y-3">
               <div className="flex justify-between text-gray-700">
                 <span>Subtotal</span>
-                <span className="font-semibold">${order.subtotal?.toFixed(2) || '0.00'}</span>
+                <span className="font-semibold">${(order.subtotal || order.total || 0).toFixed(2)}</span>
               </div>
               {order.discountAmount > 0 && (
                 <div className="flex justify-between text-green-600">
@@ -257,15 +263,15 @@ const OrderDetailsModal = ({ order, onClose, onUpdate }) => {
               )}
               <div className="flex justify-between text-gray-700">
                 <span>Handling Fee</span>
-                <span className="font-semibold">${order.handlingFee?.toFixed(2) || '0.00'}</span>
+                <span className="font-semibold">${(order.handlingFee || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-700">
                 <span>Delivery Fee</span>
-                <span className="font-semibold">${order.deliveryFee?.toFixed(2) || '0.00'}</span>
+                <span className="font-semibold">${(order.deliveryFee || 0).toFixed(2)}</span>
               </div>
               <div className="border-t border-gray-300 pt-3 flex justify-between text-lg">
                 <span className="font-bold text-gray-800">Total</span>
-                <span className="font-bold text-indigo-600">${order.finalAmount?.toFixed(2) || '0.00'}</span>
+                <span className="font-bold text-indigo-600">${(order.finalAmount || order.total || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Payment Method</span>

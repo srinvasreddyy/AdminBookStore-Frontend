@@ -27,25 +27,25 @@ const OrdersTable = ({ orders, onView, onEdit, onDelete }) => {
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-neutral-400 to-neutral-500 rounded-full flex items-center justify-center text-white font-semibold">
-                      {order.customer.charAt(0)}
+                      {(order.shippingAddress?.fullName || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-800">{order.customer}</p>
-                      <p className="text-sm text-gray-500">{order.email}</p>
+                      <p className="font-medium text-gray-800">{order.shippingAddress?.fullName || 'Unknown'}</p>
+                      <p className="text-sm text-gray-500">{order.email || 'N/A'}</p>
                     </div>
                   </div>
                 </td>
                 <td className="py-4 px-6">
                   <div className="flex flex-col">
-                    <span className="text-gray-800 font-medium">{order.books.length} items</span>
-                    <span className="text-xs text-gray-500">{order.books[0]?.title}...</span>
+                    <span className="text-gray-800 font-medium">{(order.books || []).length} items</span>
+                    <span className="text-xs text-gray-500">{order.books?.[0]?.title || 'No items'}...</span>
                   </div>
                 </td>
                 <td className="py-4 px-6">
                   <span className="text-gray-600">{order.date}</span>
                 </td>
                 <td className="py-4 px-6">
-                  <span className="font-bold text-gray-800">${order.total.toFixed(2)}</span>
+                  <span className="font-bold text-gray-800">${(order.total || 0).toFixed(2)}</span>
                 </td>
                 <td className="py-4 px-6">
                   <OrderStatusBadge status={order.status} />
