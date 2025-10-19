@@ -20,9 +20,9 @@ const OrdersTable = ({ orders, onView, onEdit, onDelete }) => {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {orders.map((order) => (
-              <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+              <tr key={order._id || order.id} className="hover:bg-gray-50 transition-colors">
                 <td className="py-4 px-6">
-                  <span className="font-semibold text-neutral-800">#{order.id}</span>
+                  <span className="font-semibold text-neutral-800">#{order._id || order.id}</span>
                 </td>
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-3">

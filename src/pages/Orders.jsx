@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Download, RefreshCw } from 'lucide-react'
 import OrderStatsCards from '../components/OrderStatsCards'
 import OrderFilters from '../components/OrderFilters'
 import OrdersTable from '../components/OrdersTable'
 import OrderDetailsModal from '../components/OrderDetailsModal'
+import { apiGet, apiDelete, apiPatch } from '../lib/api'
 
 const Orders = () => {
   const [filters, setFilters] = useState({
@@ -13,106 +14,109 @@ const Orders = () => {
     dateTo: '',
   })
 
+  const [orders, setOrders] = useState([])
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    processing: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+  })
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Sample data
-  const [orders] = useState([
-    {
-      id: '2025001',
-      customer: 'John Doe',
-      email: 'john.doe@example.com',
-      books: [
-        { title: 'The Great Gatsby', quantity: 1, price: 15.99 },
-        { title: 'To Kill a Mockingbird', quantity: 2, price: 12.99 },
-      ],
-      date: '2025-10-08',
-      total: 41.97,
-      status: 'delivered',
-    },
-    {
-      id: '2025002',
-      customer: 'Jane Smith',
-      email: 'jane.smith@example.com',
-      books: [{ title: '1984', quantity: 1, price: 14.99 }],
-      date: '2025-10-09',
-      total: 14.99,
-      status: 'shipped',
-    },
-    {
-      id: '2025003',
-      customer: 'Mike Johnson',
-      email: 'mike.j@example.com',
-      books: [
-        { title: 'Pride and Prejudice', quantity: 1, price: 13.99 },
-        { title: 'The Catcher in the Rye', quantity: 1, price: 16.99 },
-      ],
-      date: '2025-10-09',
-      total: 30.98,
-      status: 'processing',
-    },
-    {
-      id: '2025004',
-      customer: 'Sarah Williams',
-      email: 'sarah.w@example.com',
-      books: [{ title: 'Brave New World', quantity: 3, price: 11.99 }],
-      date: '2025-10-10',
-      total: 35.97,
-      status: 'pending',
-    },
-    {
-      id: '2025005',
-      customer: 'David Brown',
-      email: 'david.b@example.com',
-      books: [
-        { title: 'The Hobbit', quantity: 1, price: 18.99 },
-        { title: 'Lord of the Flies', quantity: 1, price: 10.99 },
-      ],
-      date: '2025-10-10',
-      total: 29.98,
-      status: 'shipped',
-    },
-    {
-      id: '2025006',
-      customer: 'Emily Davis',
-      email: 'emily.d@example.com',
-      books: [{ title: 'Animal Farm', quantity: 2, price: 9.99 }],
-      date: '2025-10-05',
-      total: 19.98,
-      status: 'cancelled',
-    },
-  ])
+  // Fetch orders from API
+  const fetchOrders = async () => {
+    try {
+      setLoading(true)
+      const queryParams = new URLSearchParams()
+      if (filters.search) queryParams.append('search', filters.search)
+      if (filters.status && filters.status !== 'all') queryParams.append('status', filters.status)
+      if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom)
+      if (filters.dateTo) queryParams.append('dateTo', filters.dateTo)
 
-  const stats = {
-    total: orders.length,
-    pending: orders.filter((o) => o.status === 'pending').length,
-    processing: orders.filter((o) => o.status === 'processing').length,
-    shipped: orders.filter((o) => o.status === 'shipped').length,
-    delivered: orders.filter((o) => o.status === 'delivered').length,
-    cancelled: orders.filter((o) => o.status === 'cancelled').length,
+      const response = await apiGet(`/orders/admin?${queryParams.toString()}`)
+      setOrders(response.data.orders)
+    } catch (err) {
+      setError(err.message)
+      console.error('Error fetching orders:', err)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  // Fetch order statistics
+  const fetchStats = async () => {
+    try {
+      const response = await apiGet('/orders/admin/stats')
+      setStats(response.data)
+    } catch (err) {
+      console.error('Error fetching stats:', err)
+    }
+  }
+
+  useEffect(() => {
+    fetchOrders()
+    fetchStats()
+  }, [])
 
   const handleSearch = () => {
-    console.log('Searching with filters:', filters)
+    fetchOrders()
   }
 
-  const handleView = (order) => setSelectedOrder(order)
-
-  const handleEdit = (order) => {
-    console.log('Editing order:', order)
+  const handleView = async (order) => {
+    try {
+      const response = await apiGet(`/orders/admin/${order._id || order.id}`)
+      setSelectedOrder(response.data)
+    } catch (err) {
+      console.error('Error fetching order details:', err)
+    }
   }
 
-  const handleDelete = (order) => {
-    if (window.confirm(`Are you sure you want to delete order #${order.id}?`)) {
-      console.log('Deleting order:', order)
+  const handleEdit = async (order) => {
+    // For now, just open the modal for editing
+    await handleView(order)
+  }
+
+  const handleDelete = async (order) => {
+    if (window.confirm(`Are you sure you want to delete order #${order._id || order.id}?`)) {
+      try {
+        await apiDelete(`/orders/admin/${order._id || order.id}`)
+        fetchOrders()
+        fetchStats()
+      } catch (err) {
+        console.error('Error deleting order:', err)
+        alert('Failed to delete order')
+      }
     }
   }
 
   const handleExport = () => {
+    // TODO: Implement export functionality
     console.log('Exporting orders...')
   }
 
   const handleRefresh = () => {
-    console.log('Refreshing orders...')
+    fetchOrders()
+    fetchStats()
+  }
+
+  const handleUpdateOrder = async (orderId, updateData) => {
+    try {
+      await apiPatch(`/orders/admin/${orderId}`, updateData)
+      fetchOrders()
+      fetchStats()
+      // Refresh the selected order details if it's open
+      if (selectedOrder && selectedOrder._id === orderId) {
+        const response = await apiGet(`/orders/admin/${orderId}`)
+        setSelectedOrder(response.data)
+      }
+    } catch (err) {
+      console.error('Error updating order:', err)
+      throw err
+    }
   }
 
   return (
@@ -132,9 +136,10 @@ const Orders = () => {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleRefresh}
-              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-black text-white rounded-lg text-xs font-semibold hover:bg-neutral-800 transition-colors"
+              disabled={loading}
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-black text-white rounded-lg text-xs font-semibold hover:bg-neutral-800 transition-colors disabled:opacity-50"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
@@ -150,6 +155,12 @@ const Orders = () => {
 
       {/* Content */}
       <div className="flex-1 p-4 sm:p-6 md:p-8 space-y-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="w-full overflow-x-auto">
           <OrderStatsCards stats={stats} />
@@ -166,12 +177,19 @@ const Orders = () => {
 
         {/* Orders Table */}
         <div className="w-full overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-          <OrdersTable
-            orders={orders}
-            onView={handleView}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
+              <span className="ml-2 text-gray-600">Loading orders...</span>
+            </div>
+          ) : (
+            <OrdersTable
+              orders={orders}
+              onView={handleView}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
         </div>
       </div>
 
@@ -180,6 +198,7 @@ const Orders = () => {
         <OrderDetailsModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
+          onUpdate={handleUpdateOrder}
         />
       )}
     </div>
