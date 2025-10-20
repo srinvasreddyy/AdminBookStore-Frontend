@@ -4,9 +4,9 @@ import { TbCircleLetterBFilled } from "react-icons/tb"
 import { useNavigate } from "@tanstack/react-router"
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
-
+import { TbShoppingBagDiscount } from "react-icons/tb";
 const Layout = ({ children }) => {
-  const [activeMenu, setActiveMenu] = useState('Home')
+  const [activeMenu, setActiveMenu] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
   const { logout, user } = useAuth()
@@ -19,10 +19,11 @@ const Layout = ({ children }) => {
     { name: 'Category Management', icon: Layers2, path: '/category-management' },
     { name: 'Add HomePage Content', icon: TvMinimal, path: '/homepage-management' },
     { name: 'Manage HomePage', icon: Monitor, path: '/manage-homepage' },
+    { name: 'Discounts', icon: TbShoppingBagDiscount, path: '/discounts' },
   ]
 
   const toolsItems = [
-    { name: 'Setting', icon: Settings, path: '/settings' },
+   
     { name: 'Help', icon: HelpCircle, path: '/help' },
   ]
 

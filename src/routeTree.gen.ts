@@ -13,6 +13,7 @@ import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as ManageHomepageRouteImport } from './routes/manage-homepage'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HomepageManagementRouteImport } from './routes/homepage-management'
+import { Route as DiscountsRouteImport } from './routes/discounts'
 import { Route as CategoryManagementRouteImport } from './routes/category-management'
 import { Route as BooksManagementRouteImport } from './routes/books-management'
 import { Route as AddBooksRouteImport } from './routes/add-books'
@@ -36,6 +37,11 @@ const LoginRoute = LoginRouteImport.update({
 const HomepageManagementRoute = HomepageManagementRouteImport.update({
   id: '/homepage-management',
   path: '/homepage-management',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiscountsRoute = DiscountsRouteImport.update({
+  id: '/discounts',
+  path: '/discounts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoryManagementRoute = CategoryManagementRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/add-books': typeof AddBooksRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
+  '/discounts': typeof DiscountsRoute
   '/homepage-management': typeof HomepageManagementRoute
   '/login': typeof LoginRoute
   '/manage-homepage': typeof ManageHomepageRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/add-books': typeof AddBooksRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
+  '/discounts': typeof DiscountsRoute
   '/homepage-management': typeof HomepageManagementRoute
   '/login': typeof LoginRoute
   '/manage-homepage': typeof ManageHomepageRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/add-books': typeof AddBooksRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
+  '/discounts': typeof DiscountsRoute
   '/homepage-management': typeof HomepageManagementRoute
   '/login': typeof LoginRoute
   '/manage-homepage': typeof ManageHomepageRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/add-books'
     | '/books-management'
     | '/category-management'
+    | '/discounts'
     | '/homepage-management'
     | '/login'
     | '/manage-homepage'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/add-books'
     | '/books-management'
     | '/category-management'
+    | '/discounts'
     | '/homepage-management'
     | '/login'
     | '/manage-homepage'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/add-books'
     | '/books-management'
     | '/category-management'
+    | '/discounts'
     | '/homepage-management'
     | '/login'
     | '/manage-homepage'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   AddBooksRoute: typeof AddBooksRoute
   BooksManagementRoute: typeof BooksManagementRoute
   CategoryManagementRoute: typeof CategoryManagementRoute
+  DiscountsRoute: typeof DiscountsRoute
   HomepageManagementRoute: typeof HomepageManagementRoute
   LoginRoute: typeof LoginRoute
   ManageHomepageRoute: typeof ManageHomepageRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/homepage-management'
       fullPath: '/homepage-management'
       preLoaderRoute: typeof HomepageManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/discounts': {
+      id: '/discounts'
+      path: '/discounts'
+      fullPath: '/discounts'
+      preLoaderRoute: typeof DiscountsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/category-management': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   AddBooksRoute: AddBooksRoute,
   BooksManagementRoute: BooksManagementRoute,
   CategoryManagementRoute: CategoryManagementRoute,
+  DiscountsRoute: DiscountsRoute,
   HomepageManagementRoute: HomepageManagementRoute,
   LoginRoute: LoginRoute,
   ManageHomepageRoute: ManageHomepageRoute,
