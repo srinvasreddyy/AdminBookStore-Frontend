@@ -14,7 +14,7 @@ import {
 import FormSection from '../components/FormSection'
 import FormInput from '../components/FormInput'
 import MultipleImageUpload from '../components/MultipleImageUpload'
-import { apiPostForm, apiGet, apiPatch } from '../lib/api'
+import { apiPostForm, apiGet, apiPatch, apiPatchForm } from '../lib/api'
 import toast from 'react-hot-toast'
 
 const AddBook = ({ bookId }) => {
@@ -168,9 +168,47 @@ const AddBook = ({ bookId }) => {
       
       // Append form data
       Object.keys(formData).forEach(key => {
-        if (formData[key] !== '' && formData[key] !== null && formData[key] !== undefined) {
-          formDataToSend.append(key, formData[key])
+        const value = formData[key]
+        if (value === '' || value === null || value === undefined) return
+
+        // Handle tags specially: user enters comma-separated names or IDs.
+        // Append each tag as a separate FormData field so backend receives an array.
+        if (key === 'tags' && typeof value === 'string') {
+          const tagsArray = value.split(',').map(t => t.trim()).filter(Boolean)
+
+          const idRegex = /^[0-9a-fA-F]{24}$/
+          const tagIds = []
+          const tagNames = []
+
+          tagsArray.forEach(tagVal => {
+            if (idRegex.test(tagVal)) {
+              tagIds.push(tagVal)
+            } else {
+              tagNames.push(tagVal)
+            }
+          })
+
+          // Append ObjectId-like values as 'tags' (IDs)
+          tagIds.forEach(id => formDataToSend.append('tags', id))
+          // Append plain names separately so backend can handle creation/lookup if supported
+          tagNames.forEach(name => formDataToSend.append('tagNames', name))
+
+          return
         }
+
+        // Map admin boolean fields to backend field names
+        let appendKey = key
+        let appendValue = value
+        if (key === 'featured') {
+          appendKey = 'isFeatured'
+          appendValue = String(Boolean(value))
+        }
+        if (key === 'bestseller') {
+          appendKey = 'isBestSeller'
+          appendValue = String(Boolean(value))
+        }
+
+        formDataToSend.append(appendKey, appendValue)
       })
       
       // For edit mode, only append new images, existing ones are handled by the backend
@@ -188,7 +226,8 @@ const AddBook = ({ bookId }) => {
       }
       
       if (isEditMode) {
-        await apiPatch(`/books/${bookId}`, Object.fromEntries(formDataToSend))
+        // Send multipart/form-data for PATCH so file uploads are handled properly
+        await apiPatchForm(`/books/${bookId}`, formDataToSend)
         toast.success('Book updated successfully!')
       } else {
         await apiPostForm('/books', formDataToSend)

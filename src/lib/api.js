@@ -84,6 +84,36 @@ export async function apiPostForm(path, formData) {
   return formResponse.json();
 }
 
+// Helper for PATCH requests with FormData (multipart/form-data)
+export async function apiPatchForm(path, formData) {
+  const headers = {};
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const formResponse = await fetch(`${API_BASE}${path}`, {
+    method: 'PATCH',
+    headers,
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!formResponse.ok) {
+    let errorMessage = `Request failed (${formResponse.status})`;
+    try {
+      const errorData = await formResponse.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {
+      const text = await formResponse.text().catch(() => '');
+      if (text) errorMessage = text;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return formResponse.json();
+}
+
 export async function apiDelete(path) {
   const response = await fetch(`${API_BASE}${path}`, {
     method: 'DELETE',
