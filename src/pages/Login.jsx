@@ -4,6 +4,7 @@ import { TbCircleLetterBFilled } from "react-icons/tb";
 import { useNavigate } from '@tanstack/react-router'
 import { apiPost } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
+import logo from '../assets/logo.png'; // Adjust path if needed
 import toast from 'react-hot-toast'
 const Login = () => {
   const navigate = useNavigate()
@@ -89,9 +90,9 @@ const Login = () => {
         {/* Logo and Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center ">
-            <TbCircleLetterBFilled className="text-4xl " />
+            <img src={logo} alt="Logo" className="w-auto h-16 mr-2" />
           </div>
-          <h1 className="text-xl font-bold uppercase text-neutral-900 mb-2">BookStore Admin Portal</h1>
+          <h1 className="text-xl font-bold uppercase text-neutral-900 mb-2">Admin Portal</h1>
           <p className="text-neutral-600">Sign in to manage your bookstore</p>
         </div>
 
@@ -111,7 +112,7 @@ const Login = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="admin@bookstore.com"
+                  placeholder="admin@example.com"
                   className={`w-full pl-10 pr-4 py-3 border ${
                     errors.email ? 'border-red-500' : 'border-neutral-300'
                   } rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all`}

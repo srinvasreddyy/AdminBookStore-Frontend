@@ -4,6 +4,7 @@ import { TbCircleLetterBFilled } from "react-icons/tb"
 import { useNavigate } from "@tanstack/react-router"
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
+import logo from '../assets/logo.png'; // Adjust path if needed
 import { TbShoppingBagDiscount } from "react-icons/tb";
 const Layout = ({ children }) => {
   const [activeMenu, setActiveMenu] = useState('')
@@ -48,9 +49,9 @@ const Layout = ({ children }) => {
       >
         {/* Logo */}
         <div className="p-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TbCircleLetterBFilled className="text-3xl text-neutral-800" />
-            <h1 className="text-sm font-bold uppercase text-gray-800">BookStore Admin</h1>
+          <div className="flex items-start flex-col gap-2">
+            <img src={logo} alt="Logo" className="w-auto h-14 mr-2" />
+            <h1 className="text-sm font-bold uppercase text-gray-800">Admin Portal</h1>
           </div>
           {/* Close Icon (mobile only) */}
           <button
