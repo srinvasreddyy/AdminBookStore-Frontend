@@ -161,7 +161,7 @@ const OrderDetailsModal = ({ order, onClose, onUpdate }) => {
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600 mb-2">Total Amount</p>
-              <p className="text-2xl font-bold text-indigo-600">${(order.finalAmount || order.total)?.toFixed(2) || '0.00'}</p>
+              <p className="text-2xl font-bold text-indigo-600">&#8377;{(order.finalAmount || order.total)?.toFixed(2) || '0.00'}</p>
             </div>
           </div>
 
@@ -234,8 +234,8 @@ const OrderDetailsModal = ({ order, onClose, onUpdate }) => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-800">${((item.priceAtPurchase || item.price) * item.quantity).toFixed(2)}</p>
-                    <p className="text-sm text-gray-500">${(item.priceAtPurchase || item.price)?.toFixed(2)} each</p>
+                    <p className="font-bold text-gray-800">&#8377;{((item.priceAtPurchase || item.price) * item.quantity).toFixed(2)}</p>
+                    <p className="text-sm text-gray-500">&#8377;{(item.priceAtPurchase || item.price)?.toFixed(2)} each</p>
                   </div>
                 </div>
               ))}
@@ -253,25 +253,25 @@ const OrderDetailsModal = ({ order, onClose, onUpdate }) => {
             <div className="space-y-3">
               <div className="flex justify-between text-gray-700">
                 <span>Subtotal</span>
-                <span className="font-semibold">${(order.subtotal || order.total || 0).toFixed(2)}</span>
+                <span className="font-semibold">&#8377;{(order.subtotal || order.total || 0).toFixed(2)}</span>
               </div>
               {order.discountAmount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
-                  <span className="font-semibold">-${order.discountAmount?.toFixed(2)}</span>
+                  <span className="font-semibold">-&#8377;{order.discountAmount?.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-gray-700">
                 <span>Handling Fee</span>
-                <span className="font-semibold">${(order.handlingFee || 0).toFixed(2)}</span>
+                <span className="font-semibold">&#8377;{(order.handlingFee || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-700">
                 <span>Delivery Fee</span>
-                <span className="font-semibold">${(order.deliveryFee || 0).toFixed(2)}</span>
+                <span className="font-semibold">&#8377;{(order.deliveryFee || 0).toFixed(2)}</span>
               </div>
               <div className="border-t border-gray-300 pt-3 flex justify-between text-lg">
                 <span className="font-bold text-gray-800">Total</span>
-                <span className="font-bold text-indigo-600">${(order.finalAmount || order.total || 0).toFixed(2)}</span>
+                <span className="font-bold text-indigo-600">&#8377;{(order.finalAmount || order.total || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Payment Method</span>

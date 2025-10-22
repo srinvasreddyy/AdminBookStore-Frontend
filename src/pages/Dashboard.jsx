@@ -105,7 +105,7 @@ const Dashboard = () => {
                         </td>
                         <td className="py-3 px-4 text-gray-500">{new Date(order.date).toLocaleDateString()}</td>
                         <td className="py-3 px-4 font-semibold text-gray-800">
-                          ${order.total}
+                          &#8377;{order.total}
                         </td>
                         <td className="py-3 px-4">
                           <span
