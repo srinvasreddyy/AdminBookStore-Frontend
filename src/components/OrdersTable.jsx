@@ -45,7 +45,7 @@ const OrdersTable = ({ orders, onView, onEdit, onDelete }) => {
                   <span className="text-gray-600">{order.date}</span>
                 </td>
                 <td className="py-4 px-6">
-                  <span className="font-bold text-gray-800">${(order.total || 0).toFixed(2)}</span>
+                  <span className="font-bold text-gray-800">&#8377;{(order.total || 0).toFixed(2)}</span>
                 </td>
                 <td className="py-4 px-6">
                   <OrderStatusBadge status={order.status} />
