@@ -117,7 +117,7 @@ const AddBook = ({ bookId }) => {
 
   const languages = [
     { value: 'english', label: 'English' },
-    { value: 'telugu', label: 'Telugu' },
+    // { value: 'telugu', label: 'Telugu' },
     { value: 'hindi', label: 'Hindi' },
     { value: 'spanish', label: 'Spanish' },
     { value: 'french', label: 'French' },
@@ -143,7 +143,6 @@ const AddBook = ({ bookId }) => {
     
     if (!formData.title.trim()) newErrors.title = 'Title is required'
     if (!formData.author.trim()) newErrors.author = 'Author is required'
-    if (!formData.isbn.trim()) newErrors.isbn = 'ISBN is required'
     if (!formData.category) newErrors.category = 'Category is required'
     if (!formData.price) newErrors.price = 'Price is required'
     if (!formData.stock) newErrors.stock = 'Stock quantity is required'
@@ -344,8 +343,6 @@ const AddBook = ({ bookId }) => {
                     placeholder="978-3-16-148410-0"
                     value={formData.isbn}
                     onChange={handleInputChange}
-                    required
-                    error={errors.isbn}
                   />
                   <FormInput
                     label="Publisher"

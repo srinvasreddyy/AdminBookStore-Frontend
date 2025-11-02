@@ -50,7 +50,7 @@ const BookCard = ({ book, onEdit, onDelete, onView }) => {
         </div>
 
         {/* Quick Actions Overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+        <div className="absolute inset-0 bg-black/10 bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center gap-2">
           <button
             onClick={() => onView(book)}
             className="p-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
@@ -86,11 +86,11 @@ const BookCard = ({ book, onEdit, onDelete, onView }) => {
           <div>
             {book.salePrice ? (
               <div className="flex items-center gap-2">
-                <span className="text-xl font-bold text-indigo-600">${book.salePrice}</span>
-                <span className="text-sm text-gray-400 line-through">${book.price}</span>
+                <span className="text-xl font-bold text-indigo-600">&#8377;{book.salePrice}</span>
+                <span className="text-sm text-gray-400 line-through">&#8377;{book.price}</span>
               </div>
             ) : (
-              <span className="text-xl font-bold text-gray-800">${book.price}</span>
+              <span className="text-xl font-bold text-gray-800">&#8377;{book.price}</span>
             )}
           </div>
           <span className="text-sm text-gray-500">Stock: {book.stock}</span>

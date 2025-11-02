@@ -68,11 +68,11 @@ const BooksTable = ({ books, onEdit, onDelete, onView }) => {
                     <div>
                       {book.salePrice ? (
                         <div className="flex flex-col">
-                          <span className="font-bold text-indigo-600">${book.salePrice}</span>
-                          <span className="text-xs text-gray-400 line-through">${book.price}</span>
+                          <span className="font-bold text-indigo-600">&#8377;{book.salePrice}</span>
+                          <span className="text-xs text-gray-400 line-through">&#8377;{book.price}</span>
                         </div>
                       ) : (
-                        <span className="font-bold text-gray-800">${book.price}</span>
+                        <span className="font-bold text-gray-800">&#8377;{book.price}</span>
                       )}
                     </div>
                   </td>
