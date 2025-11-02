@@ -31,6 +31,7 @@ const AddBook = ({ bookId }) => {
     numberOfPages: '',
     price: '',
     salePrice: '',
+    deliveryFee: '',
     stock: '',
     format: '',
     fullDescription: '',
@@ -72,6 +73,7 @@ const AddBook = ({ bookId }) => {
         numberOfPages: book.numberOfPages || '',
         price: book.price || '',
         salePrice: book.salePrice || '',
+        deliveryFee: book.deliveryCharge || '',
         stock: book.stock || '',
         format: book.format || '',
         fullDescription: book.fullDescription || '',
@@ -145,6 +147,7 @@ const AddBook = ({ bookId }) => {
     if (!formData.author.trim()) newErrors.author = 'Author is required'
     if (!formData.category) newErrors.category = 'Category is required'
     if (!formData.price) newErrors.price = 'Price is required'
+    if (!formData.deliveryFee) newErrors.deliveryFee = 'Delivery fee is required'
     if (!formData.stock) newErrors.stock = 'Stock quantity is required'
     if (!formData.fullDescription.trim()) newErrors.fullDescription = 'Full description is required'
     if (!isEditMode && coverImages.length === 0) newErrors.coverImages = 'At least one cover image is required'
@@ -195,7 +198,7 @@ const AddBook = ({ bookId }) => {
           return
         }
 
-        // Map admin boolean fields to backend field names
+        // Map admin boolean fields and delivery fee to backend field names
         let appendKey = key
         let appendValue = value
         if (key === 'featured') {
@@ -205,6 +208,10 @@ const AddBook = ({ bookId }) => {
         if (key === 'bestseller') {
           appendKey = 'isBestSeller'
           appendValue = String(Boolean(value))
+        }
+        if (key === 'deliveryFee') {
+          appendKey = 'deliveryCharge'
+          appendValue = value
         }
 
         formDataToSend.append(appendKey, appendValue)
@@ -258,6 +265,7 @@ const AddBook = ({ bookId }) => {
         numberOfPages: '',
         price: '',
         salePrice: '',
+        deliveryFee: '',
         stock: '',
         format: '',
         fullDescription: '',
@@ -474,6 +482,18 @@ const AddBook = ({ bookId }) => {
                   placeholder="0.00"
                   value={formData.salePrice}
                   onChange={handleInputChange}
+                  icon={DollarSign}
+                />
+                <FormInput
+                  label="Delivery Fee"
+                  name="deliveryFee"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.deliveryFee}
+                  onChange={handleInputChange}
+                  required
+                  error={errors.deliveryFee}
                   icon={DollarSign}
                 />
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
