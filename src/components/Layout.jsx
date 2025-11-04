@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Home, Layers2, Album, Plus, ShoppingBag, TvMinimal, Settings, HelpCircle, Menu, X, LogOut, Monitor } from 'lucide-react'
+import { Home, Layers2, Album, Plus, ShoppingBag, TvMinimal, Settings, HelpCircle, Menu, X, LogOut, Monitor, Phone } from 'lucide-react'
 import { TbCircleLetterBFilled } from "react-icons/tb"
 import { useNavigate } from "@tanstack/react-router"
 import { useAuth } from '../contexts/AuthContext'
@@ -20,6 +20,7 @@ const Layout = ({ children }) => {
     { name: 'Category Management', icon: Layers2, path: '/category-management' },
     { name: 'Add HomePage Content', icon: TvMinimal, path: '/homepage-management' },
     { name: 'Manage HomePage', icon: Monitor, path: '/manage-homepage' },
+    { name: 'Contact Management', icon: Phone, path: '/contact-management' },
     { name: 'Discounts', icon: TbShoppingBagDiscount, path: '/discounts' },
   ]
 

@@ -14,6 +14,7 @@ import { Route as ManageHomepageRouteImport } from './routes/manage-homepage'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HomepageManagementRouteImport } from './routes/homepage-management'
 import { Route as DiscountsRouteImport } from './routes/discounts'
+import { Route as ContactManagementRouteImport } from './routes/contact-management'
 import { Route as CategoryManagementRouteImport } from './routes/category-management'
 import { Route as BooksManagementRouteImport } from './routes/books-management'
 import { Route as AddBooksRouteImport } from './routes/add-books'
@@ -44,6 +45,11 @@ const DiscountsRoute = DiscountsRouteImport.update({
   path: '/discounts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContactManagementRoute = ContactManagementRouteImport.update({
+  id: '/contact-management',
+  path: '/contact-management',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategoryManagementRoute = CategoryManagementRouteImport.update({
   id: '/category-management',
   path: '/category-management',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/add-books': typeof AddBooksRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
+  '/contact-management': typeof ContactManagementRoute
   '/discounts': typeof DiscountsRoute
   '/homepage-management': typeof HomepageManagementRoute
   '/login': typeof LoginRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/add-books': typeof AddBooksRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
+  '/contact-management': typeof ContactManagementRoute
   '/discounts': typeof DiscountsRoute
   '/homepage-management': typeof HomepageManagementRoute
   '/login': typeof LoginRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/add-books': typeof AddBooksRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
+  '/contact-management': typeof ContactManagementRoute
   '/discounts': typeof DiscountsRoute
   '/homepage-management': typeof HomepageManagementRoute
   '/login': typeof LoginRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/add-books'
     | '/books-management'
     | '/category-management'
+    | '/contact-management'
     | '/discounts'
     | '/homepage-management'
     | '/login'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/add-books'
     | '/books-management'
     | '/category-management'
+    | '/contact-management'
     | '/discounts'
     | '/homepage-management'
     | '/login'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/add-books'
     | '/books-management'
     | '/category-management'
+    | '/contact-management'
     | '/discounts'
     | '/homepage-management'
     | '/login'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   AddBooksRoute: typeof AddBooksRoute
   BooksManagementRoute: typeof BooksManagementRoute
   CategoryManagementRoute: typeof CategoryManagementRoute
+  ContactManagementRoute: typeof ContactManagementRoute
   DiscountsRoute: typeof DiscountsRoute
   HomepageManagementRoute: typeof HomepageManagementRoute
   LoginRoute: typeof LoginRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DiscountsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contact-management': {
+      id: '/contact-management'
+      path: '/contact-management'
+      fullPath: '/contact-management'
+      preLoaderRoute: typeof ContactManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/category-management': {
       id: '/category-management'
       path: '/category-management'
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   AddBooksRoute: AddBooksRoute,
   BooksManagementRoute: BooksManagementRoute,
   CategoryManagementRoute: CategoryManagementRoute,
+  ContactManagementRoute: ContactManagementRoute,
   DiscountsRoute: DiscountsRoute,
   HomepageManagementRoute: HomepageManagementRoute,
   LoginRoute: LoginRoute,

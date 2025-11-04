@@ -161,3 +161,20 @@ export async function apiPatch(path, data) {
 
   return response.json();
 }
+
+// Contact API functions
+export async function getContactForAdmin() {
+  return apiGet('/contacts/admin');
+}
+
+export async function createContact(contactData) {
+  return apiPost('/contacts', contactData);
+}
+
+export async function updateContact(contactData) {
+  return apiPatch('/contacts', contactData);
+}
+
+export async function deleteContact() {
+  return apiDelete('/contacts');
+}
