@@ -37,9 +37,13 @@ const AddBook = ({ bookId }) => {
     fullDescription: '',
     shortDescription: '',
     tags: '',
+    subCategory: '',
     featured: false,
     bestseller: false
   })
+
+  const [subCategories, setSubCategories] = useState([])
+  const [loadingSubCategories, setLoadingSubCategories] = useState(false)
 
   const [coverImages, setCoverImages] = useState([])
   const [errors, setErrors] = useState({})
@@ -81,10 +85,24 @@ const AddBook = ({ bookId }) => {
         tags: book.tags?.map(tag => tag.name).join(', ') || '',
         featured: book.isFeatured || false,
         bestseller: book.isBestSeller || false
+        ,
+        subCategory: book.subCategory?._id || ''
       })
 
       // Set existing cover images (these will be URLs)
       setCoverImages(book.coverImages || [])
+      // If the book has a category, load its subcategories so UI can show the selected subcategory
+      if (book.category) {
+        try {
+          setLoadingSubCategories(true)
+          const categoryRes = await apiGet(`/categories/${book.category}`)
+          setSubCategories(categoryRes.data.subCategories || [])
+        } catch (err) {
+          console.warn('Failed to load subcategories for book category', err)
+        } finally {
+          setLoadingSubCategories(false)
+        }
+      }
     } catch (error) {
       console.error('Error fetching book data:', error)
       toast.error('Failed to load book data')
@@ -95,7 +113,8 @@ const AddBook = ({ bookId }) => {
 
   const fetchCategories = async () => {
     try {
-      const response = await apiGet('/categories/selectable')
+      // backend exposes /categories, avoid the non-existent /categories/selectable
+      const response = await apiGet('/categories')
       setCategories(response.data.filter(cat => !cat.deleted))
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -119,7 +138,7 @@ const AddBook = ({ bookId }) => {
 
   const languages = [
     { value: 'english', label: 'English' },
-    // { value: 'telugu', label: 'Telugu' },
+    { value: 'telugu', label: 'Telugu' },
     { value: 'hindi', label: 'Hindi' },
     { value: 'spanish', label: 'Spanish' },
     { value: 'french', label: 'French' },
@@ -134,6 +153,25 @@ const AddBook = ({ bookId }) => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
+
+    // When category changes, fetch its subcategories and clear selected subcategory
+    if (name === 'category') {
+      const categoryId = value
+      setSubCategories([])
+      setFormData(prev => ({ ...prev, subCategory: '' }))
+      if (!categoryId) return
+      ;(async () => {
+        try {
+          setLoadingSubCategories(true)
+          const categoryRes = await apiGet(`/categories/${categoryId}`)
+          setSubCategories(categoryRes.data.subCategories || [])
+        } catch (err) {
+          console.warn('Failed to load subcategories for category', err)
+        } finally {
+          setLoadingSubCategories(false)
+        }
+      })()
+    }
   }
 
   const handleImagesSelect = (files) => {
@@ -151,6 +189,10 @@ const AddBook = ({ bookId }) => {
     if (!formData.stock) newErrors.stock = 'Stock quantity is required'
     if (!formData.fullDescription.trim()) newErrors.fullDescription = 'Full description is required'
     if (!isEditMode && coverImages.length === 0) newErrors.coverImages = 'At least one cover image is required'
+    // If the selected category has subcategories, require the subCategory to be selected
+    if (subCategories && subCategories.length > 0) {
+      if (!formData.subCategory) newErrors.subCategory = 'Please select a subcategory for the chosen category'
+    }
     
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -271,6 +313,7 @@ const AddBook = ({ bookId }) => {
         fullDescription: '',
         shortDescription: '',
         tags: '',
+        subCategory: '',
         featured: false,
         bestseller: false
       })
@@ -409,6 +452,25 @@ const AddBook = ({ bookId }) => {
                     options={languages}
                   />
                 </div>
+                {/* Show subcategory select only when selected category has subcategories */}
+                {loadingSubCategories ? (
+                  <div className="mt-3 text-sm text-gray-500">Loading subcategories...</div>
+                ) : (
+                  subCategories && subCategories.length > 0 && (
+                    <div className="mt-3">
+                      <FormInput
+                        label="Subcategory"
+                        name="subCategory"
+                        type="select"
+                        value={formData.subCategory}
+                        onChange={handleInputChange}
+                        required
+                        error={errors.subCategory}
+                        options={subCategories.map(s => ({ value: s._id, label: s.name }))}
+                      />
+                    </div>
+                  )
+                )}
               </FormSection>
 
               {/* Description */}

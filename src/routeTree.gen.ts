@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as HomepageManagementRouteImport } from './routes/homepage-management'
 import { Route as DiscountsRouteImport } from './routes/discounts'
 import { Route as ContactManagementRouteImport } from './routes/contact-management'
+import { Route as ClientManagementRouteImport } from './routes/client-management'
 import { Route as CategoryManagementRouteImport } from './routes/category-management'
 import { Route as BooksManagementRouteImport } from './routes/books-management'
 import { Route as AddBooksRouteImport } from './routes/add-books'
@@ -50,6 +51,11 @@ const ContactManagementRoute = ContactManagementRouteImport.update({
   path: '/contact-management',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientManagementRoute = ClientManagementRouteImport.update({
+  id: '/client-management',
+  path: '/client-management',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategoryManagementRoute = CategoryManagementRouteImport.update({
   id: '/category-management',
   path: '/category-management',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/add-books': typeof AddBooksRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
+  '/client-management': typeof ClientManagementRoute
   '/contact-management': typeof ContactManagementRoute
   '/discounts': typeof DiscountsRoute
   '/homepage-management': typeof HomepageManagementRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/add-books': typeof AddBooksRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
+  '/client-management': typeof ClientManagementRoute
   '/contact-management': typeof ContactManagementRoute
   '/discounts': typeof DiscountsRoute
   '/homepage-management': typeof HomepageManagementRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/add-books': typeof AddBooksRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
+  '/client-management': typeof ClientManagementRoute
   '/contact-management': typeof ContactManagementRoute
   '/discounts': typeof DiscountsRoute
   '/homepage-management': typeof HomepageManagementRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/add-books'
     | '/books-management'
     | '/category-management'
+    | '/client-management'
     | '/contact-management'
     | '/discounts'
     | '/homepage-management'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/add-books'
     | '/books-management'
     | '/category-management'
+    | '/client-management'
     | '/contact-management'
     | '/discounts'
     | '/homepage-management'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/add-books'
     | '/books-management'
     | '/category-management'
+    | '/client-management'
     | '/contact-management'
     | '/discounts'
     | '/homepage-management'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   AddBooksRoute: typeof AddBooksRoute
   BooksManagementRoute: typeof BooksManagementRoute
   CategoryManagementRoute: typeof CategoryManagementRoute
+  ClientManagementRoute: typeof ClientManagementRoute
   ContactManagementRoute: typeof ContactManagementRoute
   DiscountsRoute: typeof DiscountsRoute
   HomepageManagementRoute: typeof HomepageManagementRoute
@@ -204,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactManagementRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/client-management': {
+      id: '/client-management'
+      path: '/client-management'
+      fullPath: '/client-management'
+      preLoaderRoute: typeof ClientManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/category-management': {
       id: '/category-management'
       path: '/category-management'
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   AddBooksRoute: AddBooksRoute,
   BooksManagementRoute: BooksManagementRoute,
   CategoryManagementRoute: CategoryManagementRoute,
+  ClientManagementRoute: ClientManagementRoute,
   ContactManagementRoute: ContactManagementRoute,
   DiscountsRoute: DiscountsRoute,
   HomepageManagementRoute: HomepageManagementRoute,

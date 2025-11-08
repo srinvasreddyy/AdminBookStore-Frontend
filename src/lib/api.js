@@ -1,6 +1,6 @@
 // Use full server URL for production, relative path for development
-export const API_BASE = "https://connect.indianbookshouse.in/api/v1";
-
+// export const API_BASE = "https://connect.indianbookshouse.in/api/v1";
+export const API_BASE = "http://localhost:8000/api/v1";
 
 const getHeaders = () => {
   const headers = {
@@ -13,6 +13,37 @@ const getHeaders = () => {
   }
   
   return headers;
+};
+
+// Client API functions
+export async function getClients() {
+  return apiGet('/clients');
+}
+
+export async function createClient(clientData, logoFile = null) {
+  if (logoFile) {
+    const formData = new FormData();
+    formData.append('name', clientData.name);
+    formData.append('url', clientData.url);
+    formData.append('logo', logoFile);
+    return apiPostForm('/clients', formData);
+  }
+  return apiPost('/clients', clientData);
+}
+
+export async function updateClient(clientId, clientData, logoFile = null) {
+  if (logoFile) {
+    const formData = new FormData();
+    formData.append('name', clientData.name);
+    formData.append('url', clientData.url);
+    formData.append('logo', logoFile);
+    return apiPatchForm(`/clients/${clientId}`, formData);
+  }
+  return apiPatch(`/clients/${clientId}`, clientData);
+}
+
+export async function deleteClient(clientId) {
+  return apiDelete(`/clients/${clientId}`);
 };
 
 export async function apiGet(path) {
@@ -177,4 +208,56 @@ export async function updateContact(contactData) {
 
 export async function deleteContact() {
   return apiDelete('/contacts');
+}
+
+// Category API functions
+export async function getAllCategories() {
+  return apiGet('/categories');
+}
+
+export async function getCategoryById(categoryId) {
+  return apiGet(`/categories/${categoryId}`);
+}
+
+export async function createCategory(categoryData, imageFile = null) {
+  if (imageFile) {
+    const formData = new FormData();
+    formData.append('name', categoryData.name);
+    if (categoryData.description) formData.append('description', categoryData.description);
+    formData.append('backgroundImage', imageFile);
+    return apiPostForm('/categories', formData);
+  }
+  return apiPost('/categories', categoryData);
+}
+
+export async function updateCategory(categoryId, categoryData, imageFile = null) {
+  if (imageFile) {
+    const formData = new FormData();
+    if (categoryData.name) formData.append('name', categoryData.name);
+    if (categoryData.description !== undefined) formData.append('description', categoryData.description);
+    formData.append('backgroundImage', imageFile);
+    return apiPatchForm(`/categories/${categoryId}`, formData);
+  }
+  return apiPatch(`/categories/${categoryId}`, categoryData);
+}
+
+export async function deleteCategory(categoryId) {
+  return apiDelete(`/categories/${categoryId}`);
+}
+
+// Subcategory API functions
+export async function getAllSubCategories() {
+  return apiGet('/categories/subs');
+}
+
+export async function createSubCategory(subCategoryData) {
+  return apiPost('/categories/subs', subCategoryData);
+}
+
+export async function updateSubCategory(subCategoryId, subCategoryData) {
+  return apiPatch(`/categories/subs/${subCategoryId}`, subCategoryData);
+}
+
+export async function deleteSubCategory(subCategoryId) {
+  return apiDelete(`/categories/subs/${subCategoryId}`);
 }
