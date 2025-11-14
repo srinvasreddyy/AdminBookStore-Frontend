@@ -14,7 +14,7 @@ import {
 import FormSection from '../components/FormSection'
 import FormInput from '../components/FormInput'
 import MultipleImageUpload from '../components/MultipleImageUpload'
-import { apiPostForm, apiGet, apiPatch, apiPatchForm } from '../lib/api'
+import { apiPostForm, apiGet, apiPatchForm } from '../lib/api'
 import toast from 'react-hot-toast'
 
 const AddBook = ({ bookId }) => {
@@ -188,7 +188,10 @@ const AddBook = ({ bookId }) => {
     if (!formData.deliveryFee) newErrors.deliveryFee = 'Delivery fee is required'
     if (!formData.stock) newErrors.stock = 'Stock quantity is required'
     if (!formData.fullDescription.trim()) newErrors.fullDescription = 'Full description is required'
-    if (!isEditMode && coverImages.length === 0) newErrors.coverImages = 'At least one cover image is required'
+    
+    // --- Removed image requirement ---
+    // if (!isEditMode && coverImages.length === 0) newErrors.coverImages = 'At least one cover image is required'
+    
     // If the selected category has subcategories, require the subCategory to be selected
     if (subCategories && subCategories.length > 0) {
       if (!formData.subCategory) newErrors.subCategory = 'Please select a subcategory for the chosen category'
@@ -511,10 +514,10 @@ const AddBook = ({ bookId }) => {
               {/* Cover Images */}
               <FormSection title="Cover Images" icon={BookOpen}>
                 <MultipleImageUpload
-                  label="Book Cover Images"
+                  label="Book Cover Images (up to 10)"
                   onImagesSelect={handleImagesSelect}
-                  required={!isEditMode}
-                  maxImages={5}
+                  required={false}
+                  maxImages={10}
                   existingImages={isEditMode ? coverImages.filter(img => typeof img === 'string') : []}
                 />
                 {errors.coverImages && (
@@ -617,7 +620,7 @@ const AddBook = ({ bookId }) => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-neutral-800 font-bold text-sm to-neutral-900 text-white rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-linear-to-r from-neutral-800 to-neutral-900 font-bold text-sm text-white rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>
