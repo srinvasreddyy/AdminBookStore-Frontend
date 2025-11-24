@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 import { CircleUser } from "lucide-react";
 import { apiGet } from "../lib/api";
 
-
 const Dashboard = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // State for the date filter dropdown
+  const [filterDays, setFilterDays] = useState(30);
 
   useEffect(() => {
     let cancelled = false;
@@ -15,6 +17,7 @@ const Dashboard = () => {
       setError(null);
       try {
         // Fetch recent orders for admin (limit to 6)
+        // Note: We fetch the standard set and then filter client-side as requested
         const resp = await apiGet('/orders/admin?limit=6');
         const docs = resp.data?.orders || [];
         if (!cancelled) setOrders(docs);
@@ -29,6 +32,18 @@ const Dashboard = () => {
     fetchRecentOrders();
     return () => { cancelled = true };
   }, []);
+
+  // Filter orders based on the selected number of days
+  const filteredOrders = orders.filter(order => {
+    if (!order.date) return false;
+    const orderDate = new Date(order.date);
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - filterDays);
+    // Set time to midnight for accurate day comparison if needed, 
+    // but direct comparison works for "last X days" sliding window
+    return orderDate >= cutoffDate;
+  });
+
   return (
     <>
       {/* Top Header */}
@@ -56,7 +71,6 @@ const Dashboard = () => {
       {/* Dashboard Content */}
       <div className="p-8 max-md:p-4">
        
-
         {/* Analytics Section */}
         <div className="grid grid-cols-1 gap-8 mb-8">
           {/* Recent Orders */}
@@ -65,9 +79,28 @@ const Dashboard = () => {
               <h3 className="text-xl font-bold text-gray-800">
                 Recent Orders
               </h3>
-              <button className="text-sm text-gray-600 flex items-center gap-1 border border-gray-300 px-3 py-1 rounded-lg hover:bg-gray-50">
-                📅 Last 30 Days
-              </button>
+              
+              {/* Date Range Dropdown */}
+              <div className="relative">
+                <select
+                  value={filterDays}
+                  onChange={(e) => setFilterDays(Number(e.target.value))}
+                  className="appearance-none text-sm text-gray-600 font-medium border border-gray-300 px-4 py-2 pr-8 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black/5 cursor-pointer bg-white"
+                  style={{ backgroundImage: 'none' }} // Removing default arrow to style it or keep it simple
+                >
+                  <option value={10}>📅 Last 10 Days</option>
+                  <option value={20}>📅 Last 20 Days</option>
+                  <option value={30}>📅 Last 30 Days</option>
+                  <option value={40}>📅 Last 40 Days</option>
+                  <option value={50}>📅 Last 50 Days</option>
+                </select>
+                {/* Custom Arrow Pointer for better UI */}
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                  <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Orders Table */}
@@ -76,6 +109,10 @@ const Dashboard = () => {
                 <div className="p-6 text-center text-gray-500">Loading recent orders...</div>
               ) : error ? (
                 <div className="p-6 text-center text-red-600">{error}</div>
+              ) : filteredOrders.length === 0 ? (
+                 <div className="p-12 text-center text-gray-500">
+                   No orders found in the last {filterDays} days.
+                 </div>
               ) : (
                 <table className="w-full min-w-[600px]">
                   <thead>
@@ -91,7 +128,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((order) => (
+                    {filteredOrders.map((order) => (
                       <tr
                         key={order.id}
                         className="border-b border-gray-100 hover:bg-gray-50"
@@ -128,9 +165,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
-       
-       
       </div>
     </>
   );

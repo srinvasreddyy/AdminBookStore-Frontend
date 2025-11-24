@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, ChevronDown, ChevronRight, Folder, FolderOpen } from 'lucide-react'
+import { Plus, Edit, Trash2, ChevronDown, ChevronRight, Folder, FolderOpen, Pin } from 'lucide-react'
 import FormInput from '../components/FormInput'
 import ImageUpload from '../components/ImageUpload'
 import {
@@ -19,13 +19,15 @@ const CategoryManagement = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expandedCategories, setExpandedCategories] = useState(new Set())
+  
+  // Pinned State
+  const [pinnedCategoryIds, setPinnedCategoryIds] = useState([])
 
   // Modal states
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [showSubCategoryModal, setShowSubCategoryModal] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
   const [editingSubCategory, setEditingSubCategory] = useState(null)
-  const [selectedParentCategory, setSelectedParentCategory] = useState('')
 
   // Form states
   const [categoryForm, setCategoryForm] = useState({
@@ -42,6 +44,11 @@ const CategoryManagement = () => {
 
   useEffect(() => {
     fetchData()
+    // Load pinned categories from local storage on mount
+    const storedPins = localStorage.getItem('adminPinnedCategories')
+    if (storedPins) {
+      setPinnedCategoryIds(JSON.parse(storedPins))
+    }
   }, [])
 
   const fetchData = async () => {
@@ -59,6 +66,45 @@ const CategoryManagement = () => {
       setLoading(false)
     }
   }
+
+  // Toggle Pin Logic
+  const togglePin = (categoryId) => {
+    let newPins
+    if (pinnedCategoryIds.includes(categoryId)) {
+      // Unpin: Remove from array
+      newPins = pinnedCategoryIds.filter(id => id !== categoryId)
+    } else {
+      // Pin: Add to end of array (First pinned stays at top if we render based on this index)
+      newPins = [...pinnedCategoryIds, categoryId]
+    }
+    setPinnedCategoryIds(newPins)
+    localStorage.setItem('adminPinnedCategories', JSON.stringify(newPins))
+  }
+
+  // Sorting Logic: Pinned first (in order of pinning), then unpinned (default order)
+  const sortedCategories = React.useMemo(() => {
+    if (!categories.length) return []
+
+    const pinned = []
+    const unpinned = []
+
+    // Separate
+    categories.forEach(cat => {
+      if (pinnedCategoryIds.includes(cat._id)) {
+        pinned.push(cat)
+      } else {
+        unpinned.push(cat)
+      }
+    })
+
+    // Sort the pinned array based on the order in pinnedCategoryIds
+    pinned.sort((a, b) => {
+      return pinnedCategoryIds.indexOf(a._id) - pinnedCategoryIds.indexOf(b._id)
+    })
+
+    return [...pinned, ...unpinned]
+  }, [categories, pinnedCategoryIds])
+
 
   const toggleCategoryExpansion = (categoryId) => {
     const newExpanded = new Set(expandedCategories)
@@ -108,6 +154,12 @@ const CategoryManagement = () => {
     if (!window.confirm('Are you sure you want to delete this category? This will also delete all its subcategories.')) return
     try {
       await deleteCategory(categoryId)
+      // Also remove from pins if deleted
+      if (pinnedCategoryIds.includes(categoryId)) {
+        const newPins = pinnedCategoryIds.filter(id => id !== categoryId)
+        setPinnedCategoryIds(newPins)
+        localStorage.setItem('adminPinnedCategories', JSON.stringify(newPins))
+      }
       await fetchData()
     } catch (err) {
       setError(err.message)
@@ -211,12 +263,13 @@ const CategoryManagement = () => {
         </div>
 
         <div className="divide-y divide-gray-100">
-          {categories.map((category) => {
+          {sortedCategories.map((category) => {
             const categorySubs = getSubCategoriesForCategory(category._id)
             const isExpanded = expandedCategories.has(category._id)
+            const isPinned = pinnedCategoryIds.includes(category._id)
 
             return (
-              <div key={category._id} className="p-4">
+              <div key={category._id} className={`p-4 transition-colors ${isPinned ? 'bg-indigo-50/30' : ''}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1">
                     <button
@@ -229,6 +282,18 @@ const CategoryManagement = () => {
                         <ChevronRight className="w-4 h-4 text-gray-500" />
                       )}
                     </button>
+                    
+                    {/* Pin Button */}
+                    <button 
+                      onClick={() => togglePin(category._id)}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                      title={isPinned ? "Unpin Category" : "Pin to Top"}
+                    >
+                      <Pin 
+                        className={`w-4 h-4 ${isPinned ? 'text-indigo-600 fill-indigo-600' : 'text-gray-400'}`} 
+                      />
+                    </button>
+
                     <div className="flex items-center gap-3">
                       {category.backgroundImage ? (
                         <img
@@ -242,7 +307,10 @@ const CategoryManagement = () => {
                         </div>
                       )}
                       <div>
-                        <h3 className="font-semibold text-gray-800">{category.name}</h3>
+                        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                          {category.name}
+                          {isPinned && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Pinned</span>}
+                        </h3>
                         {category.description && (
                           <p className="text-sm text-gray-500">{category.description}</p>
                         )}
@@ -275,7 +343,7 @@ const CategoryManagement = () => {
                 </div>
 
                 {isExpanded && categorySubs.length > 0 && (
-                  <div className="ml-12 mt-3 space-y-2">
+                  <div className="ml-16 mt-3 space-y-2 border-l-2 border-gray-100 pl-4">
                     {categorySubs.map((sub) => (
                       <div key={sub._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-3">
@@ -309,7 +377,7 @@ const CategoryManagement = () => {
                 )}
 
                 {isExpanded && categorySubs.length === 0 && (
-                  <div className="ml-12 mt-3 p-4 bg-gray-50 rounded-lg text-center">
+                  <div className="ml-16 mt-3 p-4 bg-gray-50 rounded-lg text-center border border-dashed border-gray-200">
                     <p className="text-gray-500 text-sm">No subcategories yet</p>
                     <button
                       onClick={() => openSubCategoryModal(null, category._id)}

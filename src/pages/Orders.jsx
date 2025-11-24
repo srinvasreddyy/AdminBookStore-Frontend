@@ -32,7 +32,10 @@ const Orders = () => {
     try {
       setLoading(true)
       const queryParams = new URLSearchParams()
-      if (filters.search) queryParams.append('search', filters.search)
+      
+      // Client-side search implemented, so we don't send search to backend
+      // if (filters.search) queryParams.append('search', filters.search)
+      
       if (filters.status && filters.status !== 'all') queryParams.append('status', filters.status)
       if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom)
       if (filters.dateTo) queryParams.append('dateTo', filters.dateTo)
@@ -119,6 +122,21 @@ const Orders = () => {
     }
   }
 
+  // Client-side filtering logic
+  const filteredOrders = orders.filter(order => {
+    if (!filters.search) return true;
+    const searchTerm = filters.search.toLowerCase().trim();
+    if (!searchTerm) return true;
+
+    // Search by ID (checking both _id and id fields)
+    const id = (order._id || order.id || '').toString().toLowerCase();
+    
+    // Search by Customer Name
+    const customerName = (order.shippingAddress?.fullName || '').toLowerCase();
+
+    return id.includes(searchTerm) || customerName.includes(searchTerm);
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -184,7 +202,7 @@ const Orders = () => {
             </div>
           ) : (
             <OrdersTable
-              orders={orders}
+              orders={filteredOrders}
               onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDelete}

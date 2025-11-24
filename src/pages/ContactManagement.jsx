@@ -11,9 +11,7 @@ import {
   FiLinkedin,
   FiYoutube,
   FiMessageCircle,
-  FiInfo,
-  FiTarget,
-  FiEye,
+  FiSend,
   FiEdit2,
   FiTrash2
 } from 'react-icons/fi'
@@ -44,11 +42,9 @@ const ContactManagement = () => {
       instagram: '',
       linkedin: '',
       youtube: '',
-      whatsapp: ''
-    },
-    about: '',
-    mission: '',
-    vision: ''
+      whatsapp: '',
+      telegram: ''
+    }
   })
 
   useEffect(() => {
@@ -78,11 +74,9 @@ const ContactManagement = () => {
             instagram: response.data.socialMedia?.instagram || '',
             linkedin: response.data.socialMedia?.linkedin || '',
             youtube: response.data.socialMedia?.youtube || '',
-            whatsapp: response.data.socialMedia?.whatsapp || ''
-          },
-          about: response.data.about || '',
-          mission: response.data.mission || '',
-          vision: response.data.vision || ''
+            whatsapp: response.data.socialMedia?.whatsapp || '',
+            telegram: response.data.socialMedia?.telegram || ''
+          }
         })
       }
     } catch (error) {
@@ -131,9 +125,6 @@ const ContactManagement = () => {
         phone: formData.phone || undefined,
         email: formData.email || undefined,
         businessHours: formData.businessHours || undefined,
-        about: formData.about || undefined,
-        mission: formData.mission || undefined,
-        vision: formData.vision || undefined,
         address: {
           street: formData.address.street || undefined,
           city: formData.address.city || undefined,
@@ -147,7 +138,8 @@ const ContactManagement = () => {
           instagram: formData.socialMedia.instagram || undefined,
           linkedin: formData.socialMedia.linkedin || undefined,
           youtube: formData.socialMedia.youtube || undefined,
-          whatsapp: formData.socialMedia.whatsapp || undefined
+          whatsapp: formData.socialMedia.whatsapp || undefined,
+          telegram: formData.socialMedia.telegram || undefined
         }
       }
 
@@ -195,11 +187,9 @@ const ContactManagement = () => {
           instagram: '',
           linkedin: '',
           youtube: '',
-          whatsapp: ''
-        },
-        about: '',
-        mission: '',
-        vision: ''
+          whatsapp: '',
+          telegram: ''
+        }
       })
       setIsEditing(false)
     } catch (error) {
@@ -214,7 +204,8 @@ const ContactManagement = () => {
     instagram: FiInstagram,
     linkedin: FiLinkedin,
     youtube: FiYoutube,
-    whatsapp: FiMessageCircle
+    whatsapp: FiMessageCircle,
+    telegram: FiSend
   }
 
   const socialMediaLabels = {
@@ -223,7 +214,8 @@ const ContactManagement = () => {
     instagram: 'Instagram',
     linkedin: 'LinkedIn',
     youtube: 'YouTube',
-    whatsapp: 'WhatsApp'
+    whatsapp: 'WhatsApp',
+    telegram: 'Telegram'
   }
 
   if (loading) {
@@ -446,7 +438,7 @@ const ContactManagement = () => {
                     value={formData.socialMedia[key]}
                     onChange={(e) => handleInputChange(`socialMedia.${key}`, e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder={`https://${key}.com/bookstore`}
+                    placeholder={key === 'telegram' ? 'https://t.me/username' : `https://${key}.com/bookstore`}
                   />
                 ) : (
                   <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
@@ -466,76 +458,6 @@ const ContactManagement = () => {
                 )}
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* About, Mission, Vision */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm lg:col-span-2">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Company Information</h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* About */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FiInfo className="w-4 h-4" />
-                About
-              </label>
-              {isEditing ? (
-                <textarea
-                  value={formData.about}
-                  onChange={(e) => handleInputChange('about', e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent resize-none"
-                  placeholder="Brief description about your company..."
-                />
-              ) : (
-                <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg min-h-[100px]">
-                  {contact?.about || 'Not provided'}
-                </p>
-              )}
-            </div>
-
-            {/* Mission */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <FiTarget className="w-4 h-4" />
-                Mission
-              </label>
-              {isEditing ? (
-                <textarea
-                  value={formData.mission}
-                  onChange={(e) => handleInputChange('mission', e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent resize-none"
-                  placeholder="Your company's mission statement..."
-                />
-              ) : (
-                <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg min-h-[100px]">
-                  {contact?.mission || 'Not provided'}
-                </p>
-              )}
-            </div>
-
-            {/* Vision */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <FiEye className="w-4 h-4" />
-                Vision
-              </label>
-              {isEditing ? (
-                <textarea
-                  value={formData.vision}
-                  onChange={(e) => handleInputChange('vision', e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent resize-none"
-                  placeholder="Your company's vision statement..."
-                />
-              ) : (
-                <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg min-h-[100px]">
-                  {contact?.vision || 'Not provided'}
-                </p>
-              )}
-            </div>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Search, Filter, SlidersHorizontal } from 'lucide-react'
 
-const FilterBar = ({ filters, setFilters, onApplyFilters, onClearFilters }) => {
+const FilterBar = ({ filters, setFilters, onApplyFilters, onClearFilters, categories = [] }) => {
   return (
     <div className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200">
       <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
@@ -27,18 +27,11 @@ const FilterBar = ({ filters, setFilters, onApplyFilters, onClearFilters }) => {
             onChange={(e) => setFilters({ ...filters, category: e.target.value })}
           >
             <option value="">All Categories</option>
-            <option value="fiction">Fiction</option>
-            <option value="non-fiction">Non-Fiction</option>
-            <option value="science">Science</option>
-            <option value="technology">Technology</option>
-            <option value="biography">Biography</option>
-            <option value="history">History</option>
-            <option value="self-help">Self-Help</option>
-            <option value="business">Business</option>
-            <option value="children">Children</option>
-            <option value="romance">Romance</option>
-            <option value="mystery">Mystery</option>
-            <option value="fantasy">Fantasy</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.name}
+              </option>
+            ))}
           </select>
           <Filter className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>

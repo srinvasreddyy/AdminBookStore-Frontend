@@ -13,11 +13,14 @@ import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as ManageHomepageRouteImport } from './routes/manage-homepage'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HomepageManagementRouteImport } from './routes/homepage-management'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as DiscountsRouteImport } from './routes/discounts'
 import { Route as ContactManagementRouteImport } from './routes/contact-management'
 import { Route as ClientManagementRouteImport } from './routes/client-management'
 import { Route as CategoryManagementRouteImport } from './routes/category-management'
 import { Route as BooksManagementRouteImport } from './routes/books-management'
+import { Route as AddSpecialsRouteImport } from './routes/add-specials'
+import { Route as AddFreeContentRouteImport } from './routes/add-free-content'
 import { Route as AddBooksRouteImport } from './routes/add-books'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -39,6 +42,11 @@ const LoginRoute = LoginRouteImport.update({
 const HomepageManagementRoute = HomepageManagementRouteImport.update({
   id: '/homepage-management',
   path: '/homepage-management',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiscountsRoute = DiscountsRouteImport.update({
@@ -66,6 +74,16 @@ const BooksManagementRoute = BooksManagementRouteImport.update({
   path: '/books-management',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AddSpecialsRoute = AddSpecialsRouteImport.update({
+  id: '/add-specials',
+  path: '/add-specials',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AddFreeContentRoute = AddFreeContentRouteImport.update({
+  id: '/add-free-content',
+  path: '/add-free-content',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AddBooksRoute = AddBooksRouteImport.update({
   id: '/add-books',
   path: '/add-books',
@@ -80,11 +98,14 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/add-books': typeof AddBooksRoute
+  '/add-free-content': typeof AddFreeContentRoute
+  '/add-specials': typeof AddSpecialsRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
   '/client-management': typeof ClientManagementRoute
   '/contact-management': typeof ContactManagementRoute
   '/discounts': typeof DiscountsRoute
+  '/help': typeof HelpRoute
   '/homepage-management': typeof HomepageManagementRoute
   '/login': typeof LoginRoute
   '/manage-homepage': typeof ManageHomepageRoute
@@ -93,11 +114,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/add-books': typeof AddBooksRoute
+  '/add-free-content': typeof AddFreeContentRoute
+  '/add-specials': typeof AddSpecialsRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
   '/client-management': typeof ClientManagementRoute
   '/contact-management': typeof ContactManagementRoute
   '/discounts': typeof DiscountsRoute
+  '/help': typeof HelpRoute
   '/homepage-management': typeof HomepageManagementRoute
   '/login': typeof LoginRoute
   '/manage-homepage': typeof ManageHomepageRoute
@@ -107,11 +131,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/add-books': typeof AddBooksRoute
+  '/add-free-content': typeof AddFreeContentRoute
+  '/add-specials': typeof AddSpecialsRoute
   '/books-management': typeof BooksManagementRoute
   '/category-management': typeof CategoryManagementRoute
   '/client-management': typeof ClientManagementRoute
   '/contact-management': typeof ContactManagementRoute
   '/discounts': typeof DiscountsRoute
+  '/help': typeof HelpRoute
   '/homepage-management': typeof HomepageManagementRoute
   '/login': typeof LoginRoute
   '/manage-homepage': typeof ManageHomepageRoute
@@ -122,11 +149,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/add-books'
+    | '/add-free-content'
+    | '/add-specials'
     | '/books-management'
     | '/category-management'
     | '/client-management'
     | '/contact-management'
     | '/discounts'
+    | '/help'
     | '/homepage-management'
     | '/login'
     | '/manage-homepage'
@@ -135,11 +165,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/add-books'
+    | '/add-free-content'
+    | '/add-specials'
     | '/books-management'
     | '/category-management'
     | '/client-management'
     | '/contact-management'
     | '/discounts'
+    | '/help'
     | '/homepage-management'
     | '/login'
     | '/manage-homepage'
@@ -148,11 +181,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/add-books'
+    | '/add-free-content'
+    | '/add-specials'
     | '/books-management'
     | '/category-management'
     | '/client-management'
     | '/contact-management'
     | '/discounts'
+    | '/help'
     | '/homepage-management'
     | '/login'
     | '/manage-homepage'
@@ -162,11 +198,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AddBooksRoute: typeof AddBooksRoute
+  AddFreeContentRoute: typeof AddFreeContentRoute
+  AddSpecialsRoute: typeof AddSpecialsRoute
   BooksManagementRoute: typeof BooksManagementRoute
   CategoryManagementRoute: typeof CategoryManagementRoute
   ClientManagementRoute: typeof ClientManagementRoute
   ContactManagementRoute: typeof ContactManagementRoute
   DiscountsRoute: typeof DiscountsRoute
+  HelpRoute: typeof HelpRoute
   HomepageManagementRoute: typeof HomepageManagementRoute
   LoginRoute: typeof LoginRoute
   ManageHomepageRoute: typeof ManageHomepageRoute
@@ -201,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/homepage-management'
       fullPath: '/homepage-management'
       preLoaderRoute: typeof HomepageManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/discounts': {
@@ -238,6 +284,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BooksManagementRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/add-specials': {
+      id: '/add-specials'
+      path: '/add-specials'
+      fullPath: '/add-specials'
+      preLoaderRoute: typeof AddSpecialsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/add-free-content': {
+      id: '/add-free-content'
+      path: '/add-free-content'
+      fullPath: '/add-free-content'
+      preLoaderRoute: typeof AddFreeContentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/add-books': {
       id: '/add-books'
       path: '/add-books'
@@ -258,11 +318,14 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddBooksRoute: AddBooksRoute,
+  AddFreeContentRoute: AddFreeContentRoute,
+  AddSpecialsRoute: AddSpecialsRoute,
   BooksManagementRoute: BooksManagementRoute,
   CategoryManagementRoute: CategoryManagementRoute,
   ClientManagementRoute: ClientManagementRoute,
   ContactManagementRoute: ContactManagementRoute,
   DiscountsRoute: DiscountsRoute,
+  HelpRoute: HelpRoute,
   HomepageManagementRoute: HomepageManagementRoute,
   LoginRoute: LoginRoute,
   ManageHomepageRoute: ManageHomepageRoute,

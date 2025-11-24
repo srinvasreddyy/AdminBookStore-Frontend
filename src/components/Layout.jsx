@@ -1,15 +1,16 @@
 import React, { useState } from 'react'
-import { Home, Layers2, Album, Plus, ShoppingBag, TvMinimal, Settings, HelpCircle, Menu, X, LogOut, Monitor, Phone, Users } from 'lucide-react'
+import { Home, Layers2, Album, Plus, ShoppingBag, TvMinimal, Settings, HelpCircle, Menu, X, LogOut, Monitor, Phone, Users, Gift, FileText } from 'lucide-react'
 import { TbCircleLetterBFilled } from "react-icons/tb"
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate, useLocation } from "@tanstack/react-router"
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
-import logo from '../assets/logo.png'; // Adjust path if needed
+import logo from '../assets/logo.png'; 
 import { TbShoppingBagDiscount } from "react-icons/tb";
+
 const Layout = ({ children }) => {
-  const [activeMenu, setActiveMenu] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const { logout, user } = useAuth()
 
   const mainMenuItems = [
@@ -20,18 +21,18 @@ const Layout = ({ children }) => {
     { name: 'Category Management', icon: Layers2, path: '/category-management' },
     { name: 'Add HomePage Content', icon: TvMinimal, path: '/homepage-management' },
     { name: 'Manage HomePage', icon: Monitor, path: '/manage-homepage' },
+    { name: 'Add Specials', icon: Gift, path: '/add-specials' },
+    { name: 'Add Free Content', icon: FileText, path: '/add-free-content' },
     { name: 'Contact Management', icon: Phone, path: '/contact-management' },
     { name: 'Discounts', icon: TbShoppingBagDiscount, path: '/discounts' },
     { name: 'Client Management', icon: Users, path: '/client-management' },
   ]
 
   const toolsItems = [
-   
     { name: 'Help', icon: HelpCircle, path: '/help' },
   ]
 
   const handleNavigate = (item) => {
-    setActiveMenu(item.name)
     navigate({ to: item.path })
     setSidebarOpen(false) // close sidebar on mobile
   }
@@ -68,7 +69,8 @@ const Layout = ({ children }) => {
         <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto">
           {mainMenuItems.map((item) => {
             const Icon = item.icon
-            const isActive = activeMenu === item.name
+            // Check if the current path matches exactly
+            const isActive = location.pathname === item.path
             return (
               <button
                 key={item.name}
@@ -90,7 +92,7 @@ const Layout = ({ children }) => {
             <p className="text-xs font-semibold text-gray-400 uppercase px-4 mb-3">Tools</p>
             {toolsItems.map((item) => {
               const Icon = item.icon
-              const isActive = activeMenu === item.name
+              const isActive = location.pathname === item.path
               return (
                 <button
                   key={item.name}

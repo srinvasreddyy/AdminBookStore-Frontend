@@ -1,6 +1,6 @@
 // Use full server URL for production, relative path for development
-export const API_BASE = "https://connect.indianbookshouse.in/api/v1";
-// export const API_BASE = "http://localhost:8000/api/v1";
+// export const API_BASE = "https://connect.indianbookshouse.in/api/v1";
+export const API_BASE = "http://localhost:8000/api/v1";
 
 const getHeaders = () => {
   const headers = {
@@ -46,6 +46,76 @@ export async function deleteClient(clientId) {
   return apiDelete(`/clients/${clientId}`);
 };
 
+// --- Specials API functions ---
+export async function getSpecials() {
+  return apiGet('/specials');
+}
+
+export async function createSpecial(specialData) {
+  const formData = new FormData();
+  formData.append('title', specialData.title);
+  if (specialData.description) formData.append('description', specialData.description);
+  
+  if (specialData.images && specialData.images.length > 0) {
+    specialData.images.forEach((image) => {
+      formData.append('images', image);
+    });
+  }
+  
+  return apiPostForm('/specials', formData);
+}
+
+export async function updateSpecial(id, specialData) {
+  const formData = new FormData();
+  if (specialData.title) formData.append('title', specialData.title);
+  if (specialData.description) formData.append('description', specialData.description);
+  
+  if (specialData.images && specialData.images.length > 0) {
+    // Filter to only include new files (File objects)
+    const newImages = specialData.images.filter(img => img instanceof File);
+    newImages.forEach((image) => {
+      formData.append('images', image);
+    });
+  }
+  
+  return apiPatchForm(`/specials/${id}`, formData);
+}
+
+export async function deleteSpecial(id) {
+  return apiDelete(`/specials/${id}`);
+}
+
+// --- Free Content API functions ---
+export async function getFreeContent() {
+  return apiGet('/free-content');
+}
+
+export async function createFreeContent(contentData) {
+  const formData = new FormData();
+  formData.append('title', contentData.title);
+  if (contentData.description) formData.append('description', contentData.description);
+  
+  if (contentData.pdf) formData.append('pdf', contentData.pdf);
+  if (contentData.coverImage) formData.append('coverImage', contentData.coverImage);
+  
+  return apiPostForm('/free-content', formData);
+}
+
+export async function updateFreeContent(id, contentData) {
+  const formData = new FormData();
+  if (contentData.title) formData.append('title', contentData.title);
+  if (contentData.description) formData.append('description', contentData.description);
+  
+  if (contentData.pdf instanceof File) formData.append('pdf', contentData.pdf);
+  if (contentData.coverImage instanceof File) formData.append('coverImage', contentData.coverImage);
+  
+  return apiPatchForm(`/free-content/${id}`, formData);
+}
+
+export async function deleteFreeContent(id) {
+  return apiDelete(`/free-content/${id}`);
+}
+
 export async function apiGet(path) {
   const response = await fetch(`${API_BASE}${path}`, {
     method: 'GET',
@@ -75,7 +145,6 @@ export async function apiPost(path, data) {
       const errorData = await response.json();
       errorMessage = errorData.message || errorMessage;
     } catch {
-      // If response is not JSON, use the text
       const text = await response.text().catch(() => '');
       if (text) errorMessage = text;
     }
@@ -106,7 +175,6 @@ export async function apiPostForm(path, formData) {
       const errorData = await formResponse.json();
       errorMessage = errorData.message || errorMessage;
     } catch {
-      // If response is not JSON, use the text
       const text = await formResponse.text().catch(() => '');
       if (text) errorMessage = text;
     }
@@ -159,7 +227,6 @@ export async function apiDelete(path) {
       const errorData = await response.json();
       errorMessage = errorData.message || errorMessage;
     } catch {
-      // If response is not JSON, use the text
       const text = await response.text().catch(() => '');
       if (text) errorMessage = text;
     }
@@ -183,7 +250,6 @@ export async function apiPatch(path, data) {
       const errorData = await response.json();
       errorMessage = errorData.message || errorMessage;
     } catch {
-      // If response is not JSON, use the text
       const text = await response.text().catch(() => '');
       if (text) errorMessage = text;
     }

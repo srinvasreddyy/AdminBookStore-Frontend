@@ -5,18 +5,18 @@ import {
   Grid3x3, 
   List, 
   Download, 
-  Upload,
-  RefreshCw,
-  DollarSign,
-  Package,
-  TrendingUp
+  Upload, 
+  RefreshCw, 
+  DollarSign, 
+  Package, 
+  TrendingUp 
 } from 'lucide-react'
 import StatsCard from '../components/StatsCard'
 import FilterBar from '../components/FilterBar'
 import BookCard from '../components/BookCard'
 import BooksTable from '../components/BooksTable'
 import { useNavigate } from '@tanstack/react-router'
-import { apiGet, apiDelete } from '../lib/api'
+import { apiGet, apiDelete, getAllCategories } from '../lib/api'
 import toast from 'react-hot-toast'
 
 const BookManagement = () => {
@@ -32,6 +32,7 @@ const BookManagement = () => {
 
   // API state
   const [books, setBooks] = useState([])
+  const [categories, setCategories] = useState([])
   const [stats, setStats] = useState({
     totalBooks: 0,
     totalValue: 0,
@@ -49,9 +50,19 @@ const BookManagement = () => {
   })
 
   useEffect(() => {
+    fetchCategoriesList()
     fetchBooks()
     fetchStats()
   }, [])
+
+  const fetchCategoriesList = async () => {
+    try {
+      const response = await getAllCategories()
+      setCategories(response.data || [])
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
 
   const fetchBooks = async (page = 1) => {
     try {
@@ -59,10 +70,18 @@ const BookManagement = () => {
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: pagination.limit.toString(),
-        ...filters
       })
 
-      const response = await apiGet(`/books/admin/my-books?${queryParams}`)
+      // Add filters if they exist
+      if (filters.search) queryParams.append('search', filters.search)
+      if (filters.category) queryParams.append('category', filters.category)
+      if (filters.status) queryParams.append('status', filters.status)
+      if (filters.minPrice) queryParams.append('minPrice', filters.minPrice)
+      if (filters.maxPrice) queryParams.append('maxPrice', filters.maxPrice)
+
+      // CHANGED: Switched from /books/admin/my-books to /books to support category filtering
+      const response = await apiGet(`/books?${queryParams.toString()}`)
+      
       setBooks(response.data.docs)
       setPagination({
         page: response.data.page,
@@ -92,7 +111,6 @@ const BookManagement = () => {
       })
     } catch (error) {
       console.error('Error fetching stats:', error)
-      toast.error('Failed to load statistics')
     } finally {
       setLoadingStats(false)
     }
@@ -103,19 +121,40 @@ const BookManagement = () => {
   }
 
   const handleClearFilters = () => {
-    setFilters({
+    // Reset local state
+    const clearedFilters = {
       search: '',
       category: '',
       status: '',
       minPrice: '',
       maxPrice: ''
+    }
+    setFilters(clearedFilters)
+    
+    // Manually trigger fetch with cleared values to ensure immediate update
+    // instead of waiting for state update
+    const queryParams = new URLSearchParams({
+      page: '1',
+      limit: pagination.limit.toString(),
     })
-    fetchBooks(1)
+    
+    setLoading(true)
+    apiGet(`/books?${queryParams.toString()}`)
+      .then(response => {
+        setBooks(response.data.docs)
+        setPagination({
+          page: response.data.page,
+          limit: response.data.limit,
+          totalPages: response.data.totalPages,
+          totalDocs: response.data.totalDocs
+        })
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
   }
 
   const handleViewBook = (book) => {
     console.log('Viewing book:', book)
-    // Implement view book modal or navigation
   }
 
   const handleEditBook = (book) => {
@@ -130,8 +169,8 @@ const BookManagement = () => {
     try {
       await apiDelete(`/books/${book._id}`)
       toast.success('Book deleted successfully')
-      fetchBooks(pagination.page) // Refresh current page
-      fetchStats() // Update stats
+      fetchBooks(pagination.page)
+      fetchStats()
     } catch (error) {
       console.error('Error deleting book:', error)
       toast.error(error.message || 'Failed to delete book')
@@ -144,12 +183,10 @@ const BookManagement = () => {
 
   const handleExport = () => {
     console.log('Exporting books...')
-    // Implement export logic
   }
 
   const handleImport = () => {
     console.log('Importing books...')
-    // Implement import logic
   }
 
   const handleRefresh = () => {
@@ -253,6 +290,7 @@ const BookManagement = () => {
             setFilters={setFilters}
             onApplyFilters={handleApplyFilters}
             onClearFilters={handleClearFilters}
+            categories={categories}
           />
         </div>
 

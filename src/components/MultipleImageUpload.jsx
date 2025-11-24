@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useId } from 'react'
 import { Upload, X, Image as ImageIcon, Plus } from 'lucide-react'
-
-const MultipleImageUpload = ({ label, onImagesSelect, required = false, maxImages = 5, existingImages = [] }) => {
+ 
+const MultipleImageUpload = ({ label, onImagesSelect, required = false, maxImages = 10, existingImages = [] }) => {
   const [previews, setPreviews] = useState([])
   const [isDragging, setIsDragging] = useState(false)
+
+  const id = useId()
+  const inputId = `multiple-image-upload-${id}`
 
   // Initialize with existing images
   useEffect(() => {
@@ -139,10 +142,10 @@ const MultipleImageUpload = ({ label, onImagesSelect, required = false, maxImage
             multiple
             onChange={handleFileChange}
             className="hidden"
-            id="multiple-image-upload"
+            id={inputId}
             required={required && previews.length === 0}
           />
-          <label htmlFor="multiple-image-upload" className="cursor-pointer">
+          <label htmlFor={inputId} className="cursor-pointer">
             <div className="flex flex-col items-center">
               <Plus className="w-8 h-8 text-gray-400 mb-2" />
               <p className="text-gray-600 font-medium mb-1">
@@ -159,9 +162,7 @@ const MultipleImageUpload = ({ label, onImagesSelect, required = false, maxImage
         </div>
       )}
 
-      {previews.length === 0 && required && (
-        <p className="text-red-500 text-xs mt-1">At least one image is required</p>
-      )}
+      {/* Image requirement message intentionally removed — images are optional. */}
     </div>
   )
 }

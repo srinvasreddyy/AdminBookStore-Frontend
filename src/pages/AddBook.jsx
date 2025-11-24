@@ -39,7 +39,8 @@ const AddBook = ({ bookId }) => {
     tags: '',
     subCategory: '',
     featured: false,
-    bestseller: false
+    bestseller: false,
+    oldBook: false
   })
 
   const [subCategories, setSubCategories] = useState([])
@@ -84,8 +85,8 @@ const AddBook = ({ bookId }) => {
         shortDescription: book.shortDescription || '',
         tags: book.tags?.map(tag => tag.name).join(', ') || '',
         featured: book.isFeatured || false,
-        bestseller: book.isBestSeller || false
-        ,
+        bestseller: book.isBestSeller || false,
+        oldBook: book.oldBook || false,
         subCategory: book.subCategory?._id || ''
       })
 
@@ -189,7 +190,7 @@ const AddBook = ({ bookId }) => {
     if (!formData.stock) newErrors.stock = 'Stock quantity is required'
     if (!formData.fullDescription.trim()) newErrors.fullDescription = 'Full description is required'
     
-    // --- Removed image requirement ---
+    // Image validation is removed to make it optional
     // if (!isEditMode && coverImages.length === 0) newErrors.coverImages = 'At least one cover image is required'
     
     // If the selected category has subcategories, require the subCategory to be selected
@@ -252,6 +253,10 @@ const AddBook = ({ bookId }) => {
         }
         if (key === 'bestseller') {
           appendKey = 'isBestSeller'
+          appendValue = String(Boolean(value))
+        }
+        if (key === 'oldBook') {
+          appendKey = 'oldBook'
           appendValue = String(Boolean(value))
         }
         if (key === 'deliveryFee') {
@@ -318,7 +323,8 @@ const AddBook = ({ bookId }) => {
         tags: '',
         subCategory: '',
         featured: false,
-        bestseller: false
+        bestseller: false,
+        oldBook: false
       })
       setCoverImages([])
       setErrors({})
@@ -610,6 +616,21 @@ const AddBook = ({ bookId }) => {
                         Bestseller
                       </span>
                       <p className="text-xs text-gray-500">Mark as bestseller</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      name="oldBook"
+                      checked={formData.oldBook}
+                      onChange={handleInputChange}
+                      className="w-5 h-5 text-neutral-600 border-gray-300 rounded focus:ring-neutral-500"
+                    />
+                    <div>
+                      <span className="text-sm font-semibold text-gray-700 group-hover:text-neutral-600 transition-colors">
+                        Old Book
+                      </span>
+                      <p className="text-xs text-gray-500">Mark as vintage/used</p>
                     </div>
                   </label>
                 </div>
