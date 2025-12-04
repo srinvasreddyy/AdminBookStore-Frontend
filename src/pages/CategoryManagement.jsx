@@ -1,50 +1,35 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, ChevronDown, ChevronRight, Folder, FolderOpen, Pin } from 'lucide-react'
+import { Plus, Edit, Trash2, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, CornerDownRight } from 'lucide-react'
 import FormInput from '../components/FormInput'
 import ImageUpload from '../components/ImageUpload'
 import {
   getAllCategories,
   createCategory,
   updateCategory,
-  deleteCategory,
-  getAllSubCategories,
-  createSubCategory,
-  updateSubCategory,
-  deleteSubCategory
+  deleteCategory
 } from '../lib/api'
+import toast from 'react-hot-toast'
 
 const CategoryManagement = () => {
-  const [categories, setCategories] = useState([])
-  const [subCategories, setSubCategories] = useState([])
+  const [categories, setCategories] = useState([]) // Tree structure
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [expandedCategories, setExpandedCategories] = useState(new Set())
-  
-  // Pinned State
   const [pinnedCategoryIds, setPinnedCategoryIds] = useState([])
 
   // Modal states
-  const [showCategoryModal, setShowCategoryModal] = useState(false)
-  const [showSubCategoryModal, setShowSubCategoryModal] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
-  const [editingSubCategory, setEditingSubCategory] = useState(null)
+  const [parentCategory, setParentCategory] = useState(null)
 
-  // Form states
-  const [categoryForm, setCategoryForm] = useState({
+  // Form
+  const [formData, setFormData] = useState({
     name: '',
     description: ''
   })
-  const [subCategoryForm, setSubCategoryForm] = useState({
-    name: '',
-    description: '',
-    parentCategory: ''
-  })
   const [categoryImage, setCategoryImage] = useState(null)
-  const [formErrors, setFormErrors] = useState({})
 
   useEffect(() => {
     fetchData()
-    // Load pinned categories from local storage on mount
     const storedPins = localStorage.getItem('adminPinnedCategories')
     if (storedPins) {
       setPinnedCategoryIds(JSON.parse(storedPins))
@@ -54,462 +39,305 @@ const CategoryManagement = () => {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [categoriesRes, subCategoriesRes] = await Promise.all([
-        getAllCategories(),
-        getAllSubCategories()
-      ])
-      setCategories(categoriesRes.data)
-      setSubCategories(subCategoriesRes.data)
+      const response = await getAllCategories()
+      setCategories(response.data)
     } catch (err) {
-      setError(err.message)
+      toast.error('Failed to fetch categories')
+      console.error(err)
     } finally {
       setLoading(false)
     }
   }
 
-  // Toggle Pin Logic
-  const togglePin = (categoryId) => {
+  // --- State Helpers ---
+  const toggleExpansion = (id) => {
+    const newSet = new Set(expandedCategories)
+    if (newSet.has(id)) newSet.delete(id)
+    else newSet.add(id)
+    setExpandedCategories(newSet)
+  }
+
+  const togglePin = (id) => {
     let newPins
-    if (pinnedCategoryIds.includes(categoryId)) {
-      // Unpin: Remove from array
-      newPins = pinnedCategoryIds.filter(id => id !== categoryId)
+    if (pinnedCategoryIds.includes(id)) {
+      newPins = pinnedCategoryIds.filter(pid => pid !== id)
     } else {
-      // Pin: Add to end of array (First pinned stays at top if we render based on this index)
-      newPins = [...pinnedCategoryIds, categoryId]
+      newPins = [...pinnedCategoryIds, id]
     }
     setPinnedCategoryIds(newPins)
     localStorage.setItem('adminPinnedCategories', JSON.stringify(newPins))
   }
 
-  // Sorting Logic: Pinned first (in order of pinning), then unpinned (default order)
-  const sortedCategories = React.useMemo(() => {
-    if (!categories.length) return []
-
-    const pinned = []
-    const unpinned = []
-
-    // Separate
-    categories.forEach(cat => {
-      if (pinnedCategoryIds.includes(cat._id)) {
-        pinned.push(cat)
-      } else {
-        unpinned.push(cat)
-      }
-    })
-
-    // Sort the pinned array based on the order in pinnedCategoryIds
-    pinned.sort((a, b) => {
-      return pinnedCategoryIds.indexOf(a._id) - pinnedCategoryIds.indexOf(b._id)
-    })
-
-    return [...pinned, ...unpinned]
-  }, [categories, pinnedCategoryIds])
-
-
-  const toggleCategoryExpansion = (categoryId) => {
-    const newExpanded = new Set(expandedCategories)
-    if (newExpanded.has(categoryId)) {
-      newExpanded.delete(categoryId)
+  // --- Handlers ---
+  const handleOpenModal = (categoryToEdit = null, parent = null) => {
+    if (categoryToEdit) {
+      setEditingCategory(categoryToEdit)
+      setFormData({
+        name: categoryToEdit.name,
+        description: categoryToEdit.description || ''
+      })
+      setCategoryImage(null) // Only update image if new one selected
+      setParentCategory(null)
     } else {
-      newExpanded.add(categoryId)
+      // Adding new
+      setEditingCategory(null)
+      setFormData({ name: '', description: '' })
+      setCategoryImage(null)
+      setParentCategory(parent)
     }
-    setExpandedCategories(newExpanded)
+    setShowModal(true)
   }
 
-  const getSubCategoriesForCategory = (categoryId) => {
-    return subCategories.filter(sub => sub.parentCategory._id === categoryId)
-  }
-
-  const handleCategorySubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!formData.name.trim()) {
+      toast.error('Category name is required')
+      return
+    }
+
     try {
       if (editingCategory) {
-        await updateCategory(editingCategory._id, categoryForm, categoryImage)
+        await updateCategory(editingCategory._id, formData, categoryImage)
+        toast.success('Category updated')
       } else {
-        await createCategory(categoryForm, categoryImage)
+        const payload = { ...formData }
+        if (parentCategory) payload.parentId = parentCategory._id
+        await createCategory(payload, categoryImage)
+        toast.success('Category created')
+        // Auto expand parent to show new child
+        if (parentCategory) {
+          setExpandedCategories(prev => new Set(prev).add(parentCategory._id))
+        }
       }
-      await fetchData()
-      closeCategoryModal()
+      setShowModal(false)
+      fetchData()
     } catch (err) {
-      setFormErrors({ general: err.message })
+      console.error(err)
+      toast.error(err.message || 'Operation failed')
     }
   }
 
-  const handleSubCategorySubmit = async (e) => {
-    e.preventDefault()
-    try {
-      if (editingSubCategory) {
-        await updateSubCategory(editingSubCategory._id, subCategoryForm)
-      } else {
-        await createSubCategory(subCategoryForm)
+  const handleDelete = async (id) => {
+    if (window.confirm('Delete this category and ALL its subcategories? This cannot be undone.')) {
+      try {
+        await deleteCategory(id)
+        toast.success('Deleted successfully')
+        fetchData()
+      } catch (err) {
+        toast.error('Failed to delete')
       }
-      await fetchData()
-      closeSubCategoryModal()
-    } catch (err) {
-      setFormErrors({ general: err.message })
     }
   }
 
-  const handleDeleteCategory = async (categoryId) => {
-    if (!window.confirm('Are you sure you want to delete this category? This will also delete all its subcategories.')) return
-    try {
-      await deleteCategory(categoryId)
-      // Also remove from pins if deleted
-      if (pinnedCategoryIds.includes(categoryId)) {
-        const newPins = pinnedCategoryIds.filter(id => id !== categoryId)
-        setPinnedCategoryIds(newPins)
-        localStorage.setItem('adminPinnedCategories', JSON.stringify(newPins))
-      }
-      await fetchData()
-    } catch (err) {
-      setError(err.message)
-    }
-  }
+  // --- Recursive Tree Component ---
+  const CategoryNode = ({ category, level = 1 }) => {
+    const hasChildren = category.children && category.children.length > 0
+    const isExpanded = expandedCategories.has(category._id)
+    const isPinned = pinnedCategoryIds.includes(category._id)
 
-  const handleDeleteSubCategory = async (subCategoryId) => {
-    if (!window.confirm('Are you sure you want to delete this subcategory?')) return
-    try {
-      await deleteSubCategory(subCategoryId)
-      await fetchData()
-    } catch (err) {
-      setError(err.message)
-    }
-  }
-
-  const openCategoryModal = (category = null) => {
-    if (category) {
-      setEditingCategory(category)
-      setCategoryForm({
-        name: category.name,
-        description: category.description || ''
-      })
-      setCategoryImage(null)
-    } else {
-      setEditingCategory(null)
-      setCategoryForm({ name: '', description: '' })
-      setCategoryImage(null)
-    }
-    setFormErrors({})
-    setShowCategoryModal(true)
-  }
-
-  const openSubCategoryModal = (subCategory = null, parentCategoryId = '') => {
-    if (subCategory) {
-      setEditingSubCategory(subCategory)
-      setSubCategoryForm({
-        name: subCategory.name,
-        description: subCategory.description || '',
-        parentCategory: subCategory.parentCategory._id
-      })
-    } else {
-      setEditingSubCategory(null)
-      setSubCategoryForm({
-        name: '',
-        description: '',
-        parentCategory: parentCategoryId
-      })
-    }
-    setFormErrors({})
-    setShowSubCategoryModal(true)
-  }
-
-  const closeCategoryModal = () => {
-    setShowCategoryModal(false)
-    setEditingCategory(null)
-    setCategoryForm({ name: '', description: '' })
-    setCategoryImage(null)
-    setFormErrors({})
-  }
-
-  const closeSubCategoryModal = () => {
-    setShowSubCategoryModal(false)
-    setEditingSubCategory(null)
-    setSubCategoryForm({ name: '', description: '', parentCategory: '' })
-    setFormErrors({})
-  }
-
-  if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="select-none">
+        <div 
+          className={`flex items-center justify-between p-3 my-1 rounded-lg transition-colors border border-transparent ${
+            isPinned ? 'bg-indigo-50 border-indigo-100' : 'hover:bg-gray-50 border-gray-100'
+          }`}
+          style={{ marginLeft: `${(level - 1) * 1.5}rem` }}
+        >
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {/* Expand/Collapse */}
+            <button 
+              onClick={() => toggleExpansion(category._id)}
+              className={`p-1 rounded hover:bg-gray-200 text-gray-500 ${hasChildren ? 'visible' : 'invisible'}`}
+            >
+              {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </button>
+
+            {/* Icon */}
+            <div className={`p-1.5 rounded ${isPinned ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+              {isExpanded ? <FolderOpen size={18} /> : <Folder size={18} />}
+            </div>
+
+            {/* Name */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className={`font-medium truncate ${isPinned ? 'text-indigo-900' : 'text-gray-700'}`}>
+                  {category.name}
+                </span>
+                {isPinned && <Pin size={12} className="text-indigo-500 fill-current" />}
+              </div>
+              {category.description && (
+                <p className="text-xs text-gray-400 truncate">{category.description}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+            {/* Only allow adding children if depth < 4 */}
+            {level < 4 && (
+              <button 
+                onClick={() => handleOpenModal(null, category)}
+                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                title="Add Subcategory"
+              >
+                <Plus size={16} />
+              </button>
+            )}
+            
+            <button 
+              onClick={() => togglePin(category._id)}
+              className={`p-1.5 rounded hover:bg-gray-100 ${isPinned ? 'text-indigo-600' : 'text-gray-400'}`}
+              title={isPinned ? "Unpin" : "Pin"}
+            >
+              <Pin size={16} className={isPinned ? 'fill-current' : ''} />
+            </button>
+
+            <button 
+              onClick={() => handleOpenModal(category)}
+              className="p-1.5 text-green-600 hover:bg-green-50 rounded"
+              title="Edit"
+            >
+              <Edit size={16} />
+            </button>
+            
+            <button 
+              onClick={() => handleDelete(category._id)}
+              className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+              title="Delete"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Render Children Recursively */}
+        {isExpanded && hasChildren && (
+          <div className="border-l border-gray-100 ml-[1.15rem]">
+            {category.children.map(child => (
+              <CategoryNode key={child._id} category={child} level={level + 1} />
+            ))}
+          </div>
+        )}
       </div>
     )
   }
 
+  // Sorting for Root Categories: Pinned first
+  const sortedRootCategories = React.useMemo(() => {
+    if (!categories.length) return []
+    const pinned = []
+    const unpinned = []
+    categories.forEach(cat => {
+      if (pinnedCategoryIds.includes(cat._id)) pinned.push(cat)
+      else unpinned.push(cat)
+    })
+    // Preserve pinned order
+    pinned.sort((a, b) => pinnedCategoryIds.indexOf(a._id) - pinnedCategoryIds.indexOf(b._id))
+    return [...pinned, ...unpinned]
+  }, [categories, pinnedCategoryIds])
+
   return (
-    <div className="p-6">
+    <div className="p-6 min-h-screen bg-gray-50">
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Category Management</h1>
-        <div className="flex gap-3">
-          <button
-            onClick={() => openCategoryModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Category
-          </button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Category Management</h1>
+          <p className="text-sm text-gray-500 mt-1">Organize your books into up to 4 levels of hierarchy.</p>
         </div>
+        <button
+          onClick={() => handleOpenModal()}
+          className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm"
+        >
+          <Plus size={18} />
+          <span>Add Root Category</span>
+        </button>
       </div>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600">{error}</p>
-        </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">Categories & Subcategories</h2>
-        </div>
-
-        <div className="divide-y divide-gray-100">
-          {sortedCategories.map((category) => {
-            const categorySubs = getSubCategoriesForCategory(category._id)
-            const isExpanded = expandedCategories.has(category._id)
-            const isPinned = pinnedCategoryIds.includes(category._id)
-
-            return (
-              <div key={category._id} className={`p-4 transition-colors ${isPinned ? 'bg-indigo-50/30' : ''}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    <button
-                      onClick={() => toggleCategoryExpansion(category._id)}
-                      className="p-1 hover:bg-gray-100 rounded"
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-gray-500" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-500" />
-                      )}
-                    </button>
-                    
-                    {/* Pin Button */}
-                    <button 
-                      onClick={() => togglePin(category._id)}
-                      className="p-1 hover:bg-gray-200 rounded transition-colors"
-                      title={isPinned ? "Unpin Category" : "Pin to Top"}
-                    >
-                      <Pin 
-                        className={`w-4 h-4 ${isPinned ? 'text-indigo-600 fill-indigo-600' : 'text-gray-400'}`} 
-                      />
-                    </button>
-
-                    <div className="flex items-center gap-3">
-                      {category.backgroundImage ? (
-                        <img
-                          src={category.backgroundImage}
-                          alt={category.name}
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <Folder className="w-5 h-5 text-gray-400" />
-                        </div>
-                      )}
-                      <div>
-                        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                          {category.name}
-                          {isPinned && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Pinned</span>}
-                        </h3>
-                        {category.description && (
-                          <p className="text-sm text-gray-500">{category.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openSubCategoryModal(null, category._id)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Add Subcategory"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => openCategoryModal(category)}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      title="Edit Category"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCategory(category._id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete Category"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {isExpanded && categorySubs.length > 0 && (
-                  <div className="ml-16 mt-3 space-y-2 border-l-2 border-gray-100 pl-4">
-                    {categorySubs.map((sub) => (
-                      <div key={sub._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <FolderOpen className="w-4 h-4 text-gray-400" />
-                          <div>
-                            <span className="font-medium text-gray-700">{sub.name}</span>
-                            {sub.description && (
-                              <p className="text-sm text-gray-500">{sub.description}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => openSubCategoryModal(sub)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Edit Subcategory"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSubCategory(sub._id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete Subcategory"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {isExpanded && categorySubs.length === 0 && (
-                  <div className="ml-16 mt-3 p-4 bg-gray-50 rounded-lg text-center border border-dashed border-gray-200">
-                    <p className="text-gray-500 text-sm">No subcategories yet</p>
-                    <button
-                      onClick={() => openSubCategoryModal(null, category._id)}
-                      className="mt-2 text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-                    >
-                      Add first subcategory
-                    </button>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {categories.length === 0 && (
-          <div className="p-12 text-center">
-            <Folder className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No categories yet</h3>
-            <p className="text-gray-500 mb-4">Get started by creating your first category</p>
+      {/* Content */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+          </div>
+        ) : sortedRootCategories.length === 0 ? (
+          <div className="text-center py-16">
+            <FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900">No categories yet</h3>
+            <p className="text-gray-500 mb-6">Start by creating your first main category.</p>
             <button
-              onClick={() => openCategoryModal()}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              onClick={() => handleOpenModal()}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
             >
-              <Plus className="w-4 h-4" />
-              Add Category
+              Create Category
             </button>
+          </div>
+        ) : (
+          <div className="p-4 group/list">
+            {sortedRootCategories.map(cat => (
+              <div key={cat._id} className="group">
+                <CategoryNode category={cat} />
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Category Modal */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingCategory ? 'Edit Category' : 'Add Category'}
-            </h3>
-            <form onSubmit={handleCategorySubmit}>
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+              <h3 className="font-bold text-gray-800">
+                {editingCategory ? 'Edit Category' : parentCategory ? 'Add Subcategory' : 'Add Root Category'}
+              </h3>
+              {parentCategory && !editingCategory && (
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                  Parent: {parentCategory.name}
+                </span>
+              )}
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <FormInput
-                label="Category Name"
-                name="name"
-                value={categoryForm.name}
-                onChange={(e) => setCategoryForm({...categoryForm, name: e.target.value})}
+                label="Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Fiction"
                 required
-                error={formErrors.name}
+                autoFocus
               />
+              
               <FormInput
                 label="Description"
-                name="description"
                 type="textarea"
-                value={categoryForm.description}
-                onChange={(e) => setCategoryForm({...categoryForm, description: e.target.value})}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Optional description..."
                 rows={3}
               />
-              <ImageUpload
-                label="Background Image"
-                onImageSelect={setCategoryImage}
-                existingImageUrl={editingCategory?.backgroundImage}
-              />
-              {formErrors.general && (
-                <p className="text-red-500 text-sm mb-4">{formErrors.general}</p>
+
+              {/* Only show image upload for root categories or when editing one that might have an image */}
+              {(!parentCategory || editingCategory?.level === 1) && (
+                <ImageUpload
+                  label="Background Image (Optional)"
+                  onImageSelect={setCategoryImage}
+                  existingImageUrl={editingCategory?.backgroundImage}
+                />
               )}
-              <div className="flex gap-3">
+
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={closeCategoryModal}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 text-sm font-medium"
                 >
                   {editingCategory ? 'Update' : 'Create'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Subcategory Modal */}
-      {showSubCategoryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingSubCategory ? 'Edit Subcategory' : 'Add Subcategory'}
-            </h3>
-            <form onSubmit={handleSubCategorySubmit}>
-              <FormInput
-                label="Parent Category"
-                name="parentCategory"
-                type="select"
-                value={subCategoryForm.parentCategory}
-                onChange={(e) => setSubCategoryForm({...subCategoryForm, parentCategory: e.target.value})}
-                options={categories.map(cat => ({ value: cat._id, label: cat.name }))}
-                required
-                error={formErrors.parentCategory}
-              />
-              <FormInput
-                label="Subcategory Name"
-                name="name"
-                value={subCategoryForm.name}
-                onChange={(e) => setSubCategoryForm({...subCategoryForm, name: e.target.value})}
-                required
-                error={formErrors.name}
-              />
-              <FormInput
-                label="Description"
-                name="description"
-                type="textarea"
-                value={subCategoryForm.description}
-                onChange={(e) => setSubCategoryForm({...subCategoryForm, description: e.target.value})}
-                rows={3}
-              />
-              {formErrors.general && (
-                <p className="text-red-500 text-sm mb-4">{formErrors.general}</p>
-              )}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={closeSubCategoryModal}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  {editingSubCategory ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>

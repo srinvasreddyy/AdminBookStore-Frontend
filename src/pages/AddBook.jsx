@@ -9,12 +9,12 @@ import {
   Calendar,
   Save,
   X,
-  Eye
+  ChevronRight
 } from 'lucide-react'
 import FormSection from '../components/FormSection'
 import FormInput from '../components/FormInput'
 import MultipleImageUpload from '../components/MultipleImageUpload'
-import { apiPostForm, apiGet, apiPatchForm } from '../lib/api'
+import { apiPostForm, apiGet, apiPatchForm, getAllCategories } from '../lib/api'
 import toast from 'react-hot-toast'
 
 const AddBook = ({ bookId }) => {
@@ -26,7 +26,7 @@ const AddBook = ({ bookId }) => {
     isbn: '',
     publisher: '',
     publicationDate: '',
-    category: '',
+    category: '', // Stores the final selected category ID
     language: '',
     numberOfPages: '',
     price: '',
@@ -37,20 +37,20 @@ const AddBook = ({ bookId }) => {
     fullDescription: '',
     shortDescription: '',
     tags: '',
-    subCategory: '',
     featured: false,
     bestseller: false,
     oldBook: false
   })
 
-  const [subCategories, setSubCategories] = useState([])
-  const [loadingSubCategories, setLoadingSubCategories] = useState(false)
-
   const [coverImages, setCoverImages] = useState([])
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [categories, setCategories] = useState([])
+  
+  // Category Handling
+  const [categoryTree, setCategoryTree] = useState([])
+  const [selectedPath, setSelectedPath] = useState([]) // Array of selected category objects
   const [loadingCategories, setLoadingCategories] = useState(true)
+  const [initialCategoryLoaded, setInitialCategoryLoaded] = useState(null) // For edit mode sync
 
   useEffect(() => {
     fetchCategories()
@@ -60,13 +60,48 @@ const AddBook = ({ bookId }) => {
     }
   }, [bookId])
 
+  // Sync Edit Mode Category with Tree
+  useEffect(() => {
+    if (categoryTree.length > 0 && initialCategoryLoaded) {
+      const path = findPathToCategory(categoryTree, initialCategoryLoaded)
+      if (path) {
+        setSelectedPath(path)
+        setFormData(prev => ({ ...prev, category: initialCategoryLoaded }))
+      }
+    }
+  }, [categoryTree, initialCategoryLoaded])
+
+  const fetchCategories = async () => {
+    try {
+      setLoadingCategories(true)
+      const response = await getAllCategories() // Returns tree
+      setCategoryTree(response.data || [])
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      toast.error('Failed to load categories')
+    } finally {
+      setLoadingCategories(false)
+    }
+  }
+
+  // Recursive helper to find path to a specific category ID
+  const findPathToCategory = (nodes, targetId, path = []) => {
+    for (const node of nodes) {
+      if (node._id === targetId) return [...path, node]
+      if (node.children?.length) {
+        const found = findPathToCategory(node.children, targetId, [...path, node])
+        if (found) return found
+      }
+    }
+    return null
+  }
+
   const fetchBookData = async (id) => {
     try {
       setLoading(true)
       const response = await apiGet(`/books/${id}`)
       const book = response.data
 
-      // Populate form with existing data
       setFormData({
         title: book.title || '',
         author: book.author || '',
@@ -87,23 +122,15 @@ const AddBook = ({ bookId }) => {
         featured: book.isFeatured || false,
         bestseller: book.isBestSeller || false,
         oldBook: book.oldBook || false,
-        subCategory: book.subCategory?._id || ''
       })
 
-      // Set existing cover images (these will be URLs)
       setCoverImages(book.coverImages || [])
-      // If the book has a category, load its subcategories so UI can show the selected subcategory
-      if (book.category) {
-        try {
-          setLoadingSubCategories(true)
-          const categoryRes = await apiGet(`/categories/${book.category}`)
-          setSubCategories(categoryRes.data.subCategories || [])
-        } catch (err) {
-          console.warn('Failed to load subcategories for book category', err)
-        } finally {
-          setLoadingSubCategories(false)
-        }
+      
+      // Store ID to sync with tree later
+      if (book.category?._id) {
+        setInitialCategoryLoaded(book.category._id)
       }
+
     } catch (error) {
       console.error('Error fetching book data:', error)
       toast.error('Failed to load book data')
@@ -112,29 +139,34 @@ const AddBook = ({ bookId }) => {
     }
   }
 
-  const fetchCategories = async () => {
-    try {
-      // backend exposes /categories, avoid the non-existent /categories/selectable
-      const response = await apiGet('/categories')
-      setCategories(response.data.filter(cat => !cat.deleted))
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-      toast.error('Failed to load categories')
-    } finally {
-      setLoadingCategories(false)
-    }
+  // --- Category Selection Logic ---
+  const handleCategoryChange = (level, selectedId) => {
+    // 1. Find the selected category object in the current level's options
+    const currentOptions = level === 0 ? categoryTree : selectedPath[level - 1]?.children || []
+    const selectedCategory = currentOptions.find(c => c._id === selectedId)
+
+    if (!selectedCategory) return
+
+    // 2. Update the path: Keep parents up to this level, add new selection
+    const newPath = [...selectedPath.slice(0, level), selectedCategory]
+    setSelectedPath(newPath)
+    
+    // 3. Update form data with the most specific category selected
+    setFormData(prev => ({ ...prev, category: selectedCategory._id }))
   }
 
-  const categoryOptions = categories.map(cat => ({
-    value: cat._id,
-    label: cat.name
-  }))
+  // Determine options for the next dropdown
+  const getOptionsForLevel = (level) => {
+    if (level === 0) return categoryTree
+    const parent = selectedPath[level - 1]
+    return parent?.children || []
+  }
+
+  // --- End Category Logic ---
 
   const formats = [
     { value: 'Hardcover', label: 'Hardcover' },
     { value: 'Paperback', label: 'Paperback' },
-    // { value: 'ebook', label: 'E-Book' },
-    // { value: 'audiobook', label: 'Audiobook' }
   ]
 
   const languages = [
@@ -154,25 +186,6 @@ const AddBook = ({ bookId }) => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
-
-    // When category changes, fetch its subcategories and clear selected subcategory
-    if (name === 'category') {
-      const categoryId = value
-      setSubCategories([])
-      setFormData(prev => ({ ...prev, subCategory: '' }))
-      if (!categoryId) return
-      ;(async () => {
-        try {
-          setLoadingSubCategories(true)
-          const categoryRes = await apiGet(`/categories/${categoryId}`)
-          setSubCategories(categoryRes.data.subCategories || [])
-        } catch (err) {
-          console.warn('Failed to load subcategories for category', err)
-        } finally {
-          setLoadingSubCategories(false)
-        }
-      })()
-    }
   }
 
   const handleImagesSelect = (files) => {
@@ -190,14 +203,6 @@ const AddBook = ({ bookId }) => {
     if (!formData.stock) newErrors.stock = 'Stock quantity is required'
     if (!formData.fullDescription.trim()) newErrors.fullDescription = 'Full description is required'
     
-    // Image validation is removed to make it optional
-    // if (!isEditMode && coverImages.length === 0) newErrors.coverImages = 'At least one cover image is required'
-    
-    // If the selected category has subcategories, require the subCategory to be selected
-    if (subCategories && subCategories.length > 0) {
-      if (!formData.subCategory) newErrors.subCategory = 'Please select a subcategory for the chosen category'
-    }
-    
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -206,6 +211,7 @@ const AddBook = ({ bookId }) => {
     e.preventDefault()
     
     if (!validateForm()) {
+      toast.error("Please fill in all required fields")
       return
     }
 
@@ -214,16 +220,12 @@ const AddBook = ({ bookId }) => {
     try {
       const formDataToSend = new FormData()
       
-      // Append form data
       Object.keys(formData).forEach(key => {
         const value = formData[key]
         if (value === '' || value === null || value === undefined) return
 
-        // Handle tags specially: user enters comma-separated names or IDs.
-        // Append each tag as a separate FormData field so backend receives an array.
         if (key === 'tags' && typeof value === 'string') {
           const tagsArray = value.split(',').map(t => t.trim()).filter(Boolean)
-
           const idRegex = /^[0-9a-fA-F]{24}$/
           const tagIds = []
           const tagNames = []
@@ -236,15 +238,11 @@ const AddBook = ({ bookId }) => {
             }
           })
 
-          // Append ObjectId-like values as 'tags' (IDs)
           tagIds.forEach(id => formDataToSend.append('tags', id))
-          // Append plain names separately so backend can handle creation/lookup if supported
           tagNames.forEach(name => formDataToSend.append('tagNames', name))
-
           return
         }
 
-        // Map admin boolean fields and delivery fee to backend field names
         let appendKey = key
         let appendValue = value
         if (key === 'featured') {
@@ -267,22 +265,18 @@ const AddBook = ({ bookId }) => {
         formDataToSend.append(appendKey, appendValue)
       })
       
-      // For edit mode, only append new images, existing ones are handled by the backend
       if (isEditMode) {
-        // Check if new images were selected (File objects vs URLs)
         const newImages = coverImages.filter(img => img instanceof File)
         newImages.forEach((image) => {
           formDataToSend.append('coverImages', image)
         })
       } else {
-        // For create mode, append all images
         coverImages.forEach((image) => {
           formDataToSend.append('coverImages', image)
         })
       }
       
       if (isEditMode) {
-        // Send multipart/form-data for PATCH so file uploads are handled properly
         await apiPatchForm(`/books/${bookId}`, formDataToSend)
         toast.success('Book updated successfully!')
       } else {
@@ -300,10 +294,8 @@ const AddBook = ({ bookId }) => {
 
   const handleReset = () => {
     if (isEditMode) {
-      // In edit mode, refetch the original data
       fetchBookData(bookId)
     } else {
-      // In create mode, reset to empty
       setFormData({
         title: '',
         author: '',
@@ -321,12 +313,12 @@ const AddBook = ({ bookId }) => {
         fullDescription: '',
         shortDescription: '',
         tags: '',
-        subCategory: '',
         featured: false,
         bestseller: false,
         oldBook: false
       })
       setCoverImages([])
+      setSelectedPath([])
       setErrors({})
     }
   }
@@ -355,11 +347,10 @@ const AddBook = ({ bookId }) => {
             </p>
           </div>
           <div className="flex gap-3">
-           
             <button
               type="button"
               onClick={handleReset}
-              className="flex text-xs items-center gap-2 font-bold text-white  px-4 py-2 border border-gray-300 rounded-lg bg-black hover:bg-gray-900 transition-colors"
+              className="flex text-xs items-center gap-2 font-bold text-white px-4 py-2 border border-gray-300 rounded-lg bg-black hover:bg-gray-900 transition-colors"
             >
               <X className="w-4 h-4" />
               Reset
@@ -374,6 +365,106 @@ const AddBook = ({ bookId }) => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Main Information */}
             <div className="lg:col-span-2 space-y-6">
+              
+              {/* Category Selection Section */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag className="w-5 h-5 text-gray-400" />
+                  <h3 className="text-base font-semibold text-gray-800">Category Selection</h3>
+                </div>
+                
+                {loadingCategories ? (
+                   <div className="text-sm text-gray-500">Loading categories...</div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Always show Root Level */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Level 1 */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Main Category</label>
+                        <select 
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                          value={selectedPath[0]?._id || ''}
+                          onChange={(e) => handleCategoryChange(0, e.target.value)}
+                        >
+                          <option value="">Select...</option>
+                          {categoryTree.map(cat => (
+                            <option key={cat._id} value={cat._id}>{cat.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Level 2 - Show if Level 1 selected and has children */}
+                      {selectedPath.length > 0 && getOptionsForLevel(1).length > 0 && (
+                        <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase">Sub Category</label>
+                          <select 
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                            value={selectedPath[1]?._id || ''}
+                            onChange={(e) => handleCategoryChange(1, e.target.value)}
+                          >
+                            <option value="">Select...</option>
+                            {getOptionsForLevel(1).map(cat => (
+                              <option key={cat._id} value={cat._id}>{cat.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Level 3 - Show if Level 2 selected and has children */}
+                      {selectedPath.length > 1 && getOptionsForLevel(2).length > 0 && (
+                        <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase">Sub Category (L3)</label>
+                          <select 
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                            value={selectedPath[2]?._id || ''}
+                            onChange={(e) => handleCategoryChange(2, e.target.value)}
+                          >
+                            <option value="">Select...</option>
+                            {getOptionsForLevel(2).map(cat => (
+                              <option key={cat._id} value={cat._id}>{cat.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Level 4 - Show if Level 3 selected and has children */}
+                      {selectedPath.length > 2 && getOptionsForLevel(3).length > 0 && (
+                        <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase">Sub Category (L4)</label>
+                          <select 
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                            value={selectedPath[3]?._id || ''}
+                            onChange={(e) => handleCategoryChange(3, e.target.value)}
+                          >
+                            <option value="">Select...</option>
+                            {getOptionsForLevel(3).map(cat => (
+                              <option key={cat._id} value={cat._id}>{cat.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Breadcrumb Visualization */}
+                    {selectedPath.length > 0 && (
+                       <div className="mt-4 pt-3 border-t border-gray-100 flex items-center flex-wrap gap-2 text-sm text-gray-600">
+                          <span className="font-medium text-gray-400">Selected Path:</span>
+                          {selectedPath.map((cat, idx) => (
+                            <React.Fragment key={cat._id}>
+                              {idx > 0 && <ChevronRight className="w-4 h-4 text-gray-400" />}
+                              <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-800 font-medium">
+                                {cat.name}
+                              </span>
+                            </React.Fragment>
+                          ))}
+                       </div>
+                    )}
+                    {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
+                  </div>
+                )}
+              </div>
+
               {/* Basic Information */}
               <FormSection title="Basic Information" icon={BookOpen}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -430,20 +521,9 @@ const AddBook = ({ bookId }) => {
                 </div>
               </FormSection>
 
-              {/* Category & Format */}
-              <FormSection title="Category & Format" icon={Tag}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormInput
-                    label="Category"
-                    name="category"
-                    type="select"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    required
-                    error={errors.category}
-                    options={categoryOptions}
-                    disabled={loadingCategories}
-                  />
+              {/* Other Attributes */}
+              <FormSection title="Details" icon={FileText}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormInput
                     label="Format"
                     name="format"
@@ -461,57 +541,36 @@ const AddBook = ({ bookId }) => {
                     options={languages}
                   />
                 </div>
-                {/* Show subcategory select only when selected category has subcategories */}
-                {loadingSubCategories ? (
-                  <div className="mt-3 text-sm text-gray-500">Loading subcategories...</div>
-                ) : (
-                  subCategories && subCategories.length > 0 && (
-                    <div className="mt-3">
-                      <FormInput
-                        label="Subcategory"
-                        name="subCategory"
-                        type="select"
-                        value={formData.subCategory}
-                        onChange={handleInputChange}
-                        required
-                        error={errors.subCategory}
-                        options={subCategories.map(s => ({ value: s._id, label: s.name }))}
-                      />
-                    </div>
-                  )
-                )}
-              </FormSection>
-
-              {/* Description */}
-              <FormSection title="Description" icon={FileText}>
-                <FormInput
-                  label="Short Description"
-                  name="shortDescription"
-                  type="textarea"
-                  rows={3}
-                  placeholder="Brief description for listing numberOfPages (max 200 characters)"
-                  value={formData.shortDescription}
-                  onChange={handleInputChange}
-                />
-                <FormInput
-                  label="Full Description"
-                  name="fullDescription"
-                  type="textarea"
-                  rows={6}
-                  placeholder="Detailed description of the book, its content, and what readers can expect..."
-                  value={formData.fullDescription}
-                  onChange={handleInputChange}
-                  required
-                  error={errors.fullDescription}
-                />
-                <FormInput
-                  label="Tags"
-                  name="tags"
-                  placeholder="adventure, fiction, bestseller (comma-separated)"
-                  value={formData.tags}
-                  onChange={handleInputChange}
-                  icon={Tag}
-                />
+                <div className="mt-4 space-y-4">
+                  <FormInput
+                    label="Short Description"
+                    name="shortDescription"
+                    type="textarea"
+                    rows={2}
+                    placeholder="Brief description..."
+                    value={formData.shortDescription}
+                    onChange={handleInputChange}
+                  />
+                  <FormInput
+                    label="Full Description"
+                    name="fullDescription"
+                    type="textarea"
+                    rows={5}
+                    placeholder="Detailed description..."
+                    value={formData.fullDescription}
+                    onChange={handleInputChange}
+                    required
+                    error={errors.fullDescription}
+                  />
+                  <FormInput
+                    label="Tags"
+                    name="tags"
+                    placeholder="adventure, fiction, bestseller (comma-separated)"
+                    value={formData.tags}
+                    onChange={handleInputChange}
+                    icon={Tag}
+                  />
+                </div>
               </FormSection>
             </div>
 

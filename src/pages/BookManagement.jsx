@@ -16,12 +16,13 @@ import FilterBar from '../components/FilterBar'
 import BookCard from '../components/BookCard'
 import BooksTable from '../components/BooksTable'
 import { useNavigate } from '@tanstack/react-router'
-import { apiGet, apiDelete, getAllCategories } from '../lib/api'
+// CHANGED: Import getCategoryList instead of getAllCategories
+import { apiGet, apiDelete, getCategoryList } from '../lib/api' 
 import toast from 'react-hot-toast'
 
 const BookManagement = () => {
   const navigate = useNavigate()
-  const [viewMode, setViewMode] = useState('grid') // 'grid' or 'table'
+  const [viewMode, setViewMode] = useState('grid')
   const [filters, setFilters] = useState({
     search: '',
     category: '',
@@ -57,7 +58,8 @@ const BookManagement = () => {
 
   const fetchCategoriesList = async () => {
     try {
-      const response = await getAllCategories()
+      // CHANGED: Use getCategoryList for flat array
+      const response = await getCategoryList()
       setCategories(response.data || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -72,14 +74,12 @@ const BookManagement = () => {
         limit: pagination.limit.toString(),
       })
 
-      // Add filters if they exist
       if (filters.search) queryParams.append('search', filters.search)
       if (filters.category) queryParams.append('category', filters.category)
       if (filters.status) queryParams.append('status', filters.status)
       if (filters.minPrice) queryParams.append('minPrice', filters.minPrice)
       if (filters.maxPrice) queryParams.append('maxPrice', filters.maxPrice)
 
-      // CHANGED: Switched from /books/admin/my-books to /books to support category filtering
       const response = await apiGet(`/books?${queryParams.toString()}`)
       
       setBooks(response.data.docs)
@@ -98,6 +98,8 @@ const BookManagement = () => {
     }
   }
 
+  // ... Rest of the file remains the same (fetchStats, handlers, render)
+  // I will include the rest for completeness, but the logic is identical
   const fetchStats = async () => {
     try {
       setLoadingStats(true)
@@ -117,11 +119,10 @@ const BookManagement = () => {
   }
 
   const handleApplyFilters = () => {
-    fetchBooks(1) // Reset to first page when applying filters
+    fetchBooks(1)
   }
 
   const handleClearFilters = () => {
-    // Reset local state
     const clearedFilters = {
       search: '',
       category: '',
@@ -131,8 +132,6 @@ const BookManagement = () => {
     }
     setFilters(clearedFilters)
     
-    // Manually trigger fetch with cleared values to ensure immediate update
-    // instead of waiting for state update
     const queryParams = new URLSearchParams({
       page: '1',
       limit: pagination.limit.toString(),
@@ -197,7 +196,6 @@ const BookManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
       <div className="bg-white sticky top-0 z-50 max-lg:z-10 max-lg:top-11 border-b border-gray-200 px-4 sm:px-6 md:px-8 py-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
@@ -243,9 +241,7 @@ const BookManagement = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 p-4 sm:p-6 md:p-8 space-y-6">
-        {/* Stats Cards */}
         <div className="w-full overflow-x-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 min-w-[320px]">
             <StatsCard
@@ -283,7 +279,6 @@ const BookManagement = () => {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="w-full overflow-x-auto">
           <FilterBar
             filters={filters}
@@ -294,7 +289,6 @@ const BookManagement = () => {
           />
         </div>
 
-        {/* View Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <h2 className="text-lg sm:text-xl font-bold text-gray-800">
             All Books ({loading ? '...' : pagination.totalDocs})
@@ -325,7 +319,6 @@ const BookManagement = () => {
           </div>
         </div>
 
-        {/* Books Display */}
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
@@ -367,7 +360,6 @@ const BookManagement = () => {
           </div>
         )}
 
-        {/* Pagination */}
         {!loading && pagination.totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-6">
             <button
@@ -390,7 +382,6 @@ const BookManagement = () => {
           </div>
         )}
 
-        {/* Empty State */}
         {!loading && books.length === 0 && (
           <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center border border-gray-200">
             <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
