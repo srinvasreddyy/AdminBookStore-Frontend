@@ -1,375 +1,393 @@
 import React, { useState, useEffect } from 'react'
-import { 
-  Plus, Search, Edit2, Trash2, ChevronRight, 
-  ChevronDown, FolderTree, Image as ImageIcon,
-  Pin, PinOff
-} from 'lucide-react'
-import PageHeader from '../components/PageHeader'
-import { fetchCategories, createCategory, updateCategory, deleteCategory, pinCategory } from '../lib/api'
-import toast from 'react-hot-toast'
+import { Plus, Edit, Trash2, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, CornerDownRight } from 'lucide-react'
 import FormInput from '../components/FormInput'
 import ImageUpload from '../components/ImageUpload'
+import {
+  getAllCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory
+} from '../lib/api'
+import toast from 'react-hot-toast'
 
 const CategoryManagement = () => {
-  const [categories, setCategories] = useState([])
+  const [categories, setCategories] = useState([]) // Tree structure
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState(new Set())
+
+  // Modal states
+  const [showModal, setShowModal] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
-  
-  // Form State
+  const [parentCategory, setParentCategory] = useState(null)
+
+  // Form
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
-    parentId: '',
-    image: null
+    description: ''
   })
-  
-  // Tree State
-  const [expandedCategories, setExpandedCategories] = useState({})
+  const [categoryImage, setCategoryImage] = useState(null)
 
   useEffect(() => {
-    loadCategories()
+    fetchData()
   }, [])
 
-  const loadCategories = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true)
-      const data = await fetchCategories()
-      setCategories(data)
-    } catch (error) {
-      toast.error('Failed to load categories')
-      console.error(error)
+      const response = await getAllCategories()
+      setCategories(response.data)
+    } catch (err) {
+      toast.error('Failed to fetch categories')
+      console.error(err)
     } finally {
       setLoading(false)
     }
   }
 
-  // --- Handlers ---
-
-  const handleTogglePin = async (e, category) => {
-    e.stopPropagation(); // Prevent toggling accordion if clicked on row
-    try {
-      const updatedCat = await pinCategory(category._id);
-      
-      // Update local state to reflect change immediately
-      setCategories(prev => prev.map(c => 
-        c._id === category._id ? { ...c, isPinned: updatedCat.isPinned, pinnedAt: updatedCat.pinnedAt } : c
-      ));
-
-      toast.success(updatedCat.isPinned ? "Category pinned" : "Category unpinned");
-    } catch (error) {
-      toast.error("Failed to update pin status");
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+  // --- State Helpers ---
+  const toggleExpansion = (id) => {
+    const newSet = new Set(expandedCategories)
+    if (newSet.has(id)) newSet.delete(id)
+    else newSet.add(id)
+    setExpandedCategories(newSet)
   }
 
-  const handleImageChange = (file) => {
-    setFormData(prev => ({ ...prev, image: file }))
+  const handleTogglePin = async (category) => {
+    if (category.level !== 1) {
+      toast.error("Only root categories can be pinned")
+      return
+    }
+
+    try {
+      const newStatus = !category.isPinned
+      // API Call to persistence
+      await updateCategory(category._id, { isPinned: newStatus })
+      toast.success(newStatus ? 'Category pinned' : 'Category unpinned')
+      fetchData() // Refresh tree
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to update pin status')
+    }
+  }
+
+  // --- Handlers ---
+  const handleOpenModal = (categoryToEdit = null, parent = null) => {
+    if (categoryToEdit) {
+      setEditingCategory(categoryToEdit)
+      setFormData({
+        name: categoryToEdit.name,
+        description: categoryToEdit.description || ''
+      })
+      setCategoryImage(null) 
+      setParentCategory(null)
+    } else {
+      // Adding new
+      setEditingCategory(null)
+      setFormData({ name: '', description: '' })
+      setCategoryImage(null)
+      setParentCategory(parent)
+    }
+    setShowModal(true)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    try {
-      const data = new FormData()
-      data.append('name', formData.name)
-      data.append('description', formData.description)
-      if (formData.parentId) data.append('parentId', formData.parentId)
-      if (formData.image) data.append('backgroundImage', formData.image)
+    if (!formData.name.trim()) {
+      toast.error('Category name is required')
+      return
+    }
 
+    try {
       if (editingCategory) {
-        await updateCategory(editingCategory._id, data)
-        toast.success('Category updated successfully')
+        await updateCategory(editingCategory._id, formData, categoryImage)
+        toast.success('Category updated')
       } else {
-        await createCategory(data)
-        toast.success('Category created successfully')
+        const payload = { ...formData }
+        if (parentCategory) payload.parentId = parentCategory._id
+        await createCategory(payload, categoryImage)
+        toast.success('Category created')
+        // Auto expand parent to show new child
+        if (parentCategory) {
+          setExpandedCategories(prev => new Set(prev).add(parentCategory._id))
+        }
       }
-      
-      setIsModalOpen(false)
-      resetForm()
-      loadCategories()
-    } catch (error) {
-      toast.error(error.message || 'Operation failed')
+      setShowModal(false)
+      fetchData()
+    } catch (err) {
+      console.error(err)
+      toast.error(err.message || 'Operation failed')
     }
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure? Sub-categories must be deleted first.')) return
-    try {
-      await deleteCategory(id)
-      toast.success('Category deleted')
-      loadCategories()
-    } catch (error) {
-      toast.error(error.message || 'Failed to delete')
+    if (window.confirm('Delete this category and ALL its subcategories? This cannot be undone.')) {
+      try {
+        await deleteCategory(id)
+        toast.success('Deleted successfully')
+        fetchData()
+      } catch (err) {
+        toast.error('Failed to delete. Ensure no books are attached.')
+      }
     }
   }
 
-  const resetForm = () => {
-    setFormData({ name: '', description: '', parentId: '', image: null })
-    setEditingCategory(null)
-  }
+  // --- Recursive Tree Component ---
+  const CategoryNode = ({ category, level = 1 }) => {
+    const hasChildren = category.children && category.children.length > 0
+    const isExpanded = expandedCategories.has(category._id)
+    const isPinned = category.isPinned
 
-  const toggleExpand = (id) => {
-    setExpandedCategories(prev => ({ ...prev, [id]: !prev[id] }))
-  }
-
-  // --- Sort Logic ---
-  const sortCategories = (list) => {
-    return [...list].sort((a, b) => {
-       // 1. Pinned comes first
-       if (a.isPinned !== b.isPinned) {
-           return a.isPinned ? -1 : 1;
-       }
-       // 2. If both pinned, chronological (oldest pin first)
-       if (a.isPinned) {
-           return new Date(a.pinnedAt) - new Date(b.pinnedAt);
-       }
-       // 3. If neither pinned, maintain existing order (createdAt desc from backend usually)
-       return 0;
-    });
-  };
-
-  // --- Recursive Tree Rendering ---
-  const renderCategoryTree = (parentId = null, level = 0) => {
-    // 1. Filter items for this level
-    const filtered = categories.filter(c => 
-      (parentId ? c.parent?._id === parentId || c.parent === parentId : !c.parent)
-    )
-
-    // 2. Apply Sorting (Pinned Top)
-    const sortedFiltered = sortCategories(filtered);
-
-    // 3. Handle Search Mode
-    if (searchQuery) {
-       // Flatten and Search
-       const searchResults = categories.filter(c => 
-          c.name.toLowerCase().includes(searchQuery.toLowerCase())
-       );
-       // Sort search results too
-       const sortedSearchResults = sortCategories(searchResults);
-
-       return sortedSearchResults.map(category => (
-        <CategoryRow 
-          key={category._id} 
-          category={category} 
-          level={0} 
-          isSearchResult={true} 
-        />
-      ));
-    }
-
-    return sortedFiltered.map(category => (
-      <React.Fragment key={category._id}>
-        <CategoryRow 
-          category={category} 
-          level={level} 
-          hasChildren={categories.some(c => c.parent?._id === category._id || c.parent === category._id)}
-          isExpanded={expandedCategories[category._id]}
-          onToggle={() => toggleExpand(category._id)}
-        />
-        {expandedCategories[category._id] && renderCategoryTree(category._id, level + 1)}
-      </React.Fragment>
-    ))
-  }
-
-  const CategoryRow = ({ category, level, hasChildren, isExpanded, onToggle, isSearchResult }) => (
-    <div 
-      className={`group flex items-center justify-between p-3 border-b border-gray-100 transition-all duration-300
-        ${category.isPinned 
-          ? 'bg-amber-50/40 hover:bg-amber-50/80 border-l-4 border-l-amber-400' 
-          : 'hover:bg-gray-50 border-l-4 border-l-transparent'}`}
-      style={{ paddingLeft: isSearchResult ? '1rem' : `${level * 1.5 + 1}rem` }}
-    >
-      <div className="flex items-center gap-3 flex-1 overflow-hidden">
-        {hasChildren && !isSearchResult ? (
-          <button onClick={onToggle} className="p-1 hover:bg-gray-200 rounded text-gray-500 transition-colors">
-            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          </button>
-        ) : (
-          <div className="w-6 flex-shrink-0" /> // spacer
+    return (
+      <div className="relative select-none">
+        {/* Hierarchical Connecting Line for Children */}
+        {level > 1 && (
+           <div className="absolute -left-4 top-0 bottom-1/2 w-4 border-l-2 border-b-2 border-gray-200 rounded-bl-lg -translate-y-3" />
         )}
-        
-        <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200 flex-shrink-0">
-          {category.backgroundImage ? (
-            <img src={category.backgroundImage} alt={category.name} className="w-full h-full object-cover" />
-          ) : (
-            <ImageIcon size={18} className="text-gray-400" />
-          )}
-        </div>
 
-        <div className="flex flex-col min-w-0">
-          <span className={`font-medium flex items-center gap-2 ${category.isPinned ? 'text-amber-900' : 'text-gray-800'}`}>
-            <span className="truncate">{category.name}</span>
-            {category.isPinned && (
-              <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">
-                <Pin size={10} className="fill-current" />
-                Pinned
-              </span>
+        <div 
+          className={`group flex items-center justify-between p-3 my-1 rounded-lg transition-all border 
+            ${isPinned 
+              ? 'bg-indigo-50 border-indigo-200 shadow-sm' 
+              : 'bg-white hover:bg-gray-50 border-gray-100 hover:border-gray-200'
+            }`}
+        >
+          {/* LEFT SIDE: Icon & Name */}
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {/* Expand/Collapse Toggle */}
+            <button 
+              onClick={() => toggleExpansion(category._id)}
+              className={`p-1 rounded-md transition-colors ${
+                hasChildren 
+                  ? 'hover:bg-gray-200 text-gray-500' 
+                  : 'text-gray-300 cursor-default'
+              }`}
+            >
+              {isExpanded && hasChildren ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            </button>
+
+            {/* Folder Icon */}
+            <div className={`p-2 rounded-lg ${isPinned ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+              {isExpanded ? <FolderOpen size={20} /> : <Folder size={20} />}
+            </div>
+
+            {/* Name & Desc */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className={`font-semibold text-sm ${isPinned ? 'text-indigo-900' : 'text-gray-800'}`}>
+                  {category.name}
+                </span>
+                {/* Visual Pin Indicator */}
+                {isPinned && <Pin size={12} className="text-indigo-500 fill-current" />}
+                {/* Level Badge (Optional, debug helper) */}
+                <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">
+                  Lvl {level}
+                </span>
+              </div>
+              {category.description && (
+                <p className="text-xs text-gray-400 truncate max-w-[200px]">{category.description}</p>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT SIDE: Actions (Edit, Delete, Add Child, Pin) */}
+          <div className="flex items-center gap-1">
+            {/* 1. Add Subcategory (Only if level < 4) */}
+            {level < 4 && (
+              <button 
+                onClick={() => handleOpenModal(null, category)}
+                className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                title="Add Subcategory"
+              >
+                <Plus size={14} />
+                <span className="hidden sm:inline">Add</span>
+              </button>
             )}
-          </span>
-          {category.description && (
-            <span className="text-xs text-gray-500 truncate">{category.description}</span>
-          )}
+
+            {/* 2. Pin (Only for Root Categories) */}
+            {level === 1 && (
+              <button 
+                onClick={() => handleTogglePin(category)}
+                className={`p-1.5 rounded-md transition-colors ${
+                  isPinned 
+                    ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' 
+                    : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                }`}
+                title={isPinned ? "Unpin Category" : "Pin to Top"}
+              >
+                <Pin size={16} className={isPinned ? 'fill-current' : ''} />
+              </button>
+            )}
+
+            <div className="w-px h-4 bg-gray-200 mx-1"></div>
+
+            {/* 3. Edit */}
+            <button 
+              onClick={() => handleOpenModal(category)}
+              className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+              title="Edit Category"
+            >
+              <Edit size={16} />
+            </button>
+            
+            {/* 4. Delete */}
+            <button 
+              onClick={() => handleDelete(category._id)}
+              className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+              title="Delete Category"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-4">
-        {/* Pin Button */}
-        <button
-          onClick={(e) => handleTogglePin(e, category)}
-          className={`p-2 rounded-md transition-colors ${
-            category.isPinned 
-              ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
-              : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
-          }`}
-          title={category.isPinned ? "Unpin Category" : "Pin Category"}
-        >
-          {category.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
-        </button>
-
-        <button
-          onClick={() => {
-            setEditingCategory(category)
-            setFormData({
-              name: category.name,
-              description: category.description || '',
-              parentId: category.parent?._id || category.parent || '',
-              image: null
-            })
-            setIsModalOpen(true)
-          }}
-          className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
-        >
-          <Edit2 size={16} />
-        </button>
-        <button
-          onClick={() => handleDelete(category._id)}
-          className="p-2 text-red-600 hover:bg-red-50 rounded-md"
-        >
-          <Trash2 size={16} />
-        </button>
+        {/* Children Container (Recursive) */}
+        {isExpanded && hasChildren && (
+          <div className="pl-6 md:pl-8 border-l-2 border-gray-100 ml-4 space-y-1">
+            {category.children.map(child => (
+              <CategoryNode key={child._id} category={child} level={level + 1} />
+            ))}
+          </div>
+        )}
       </div>
-    </div>
-  )
+    )
+  }
+
+  // Sorting: Pinned roots first, then alphabetical
+  const sortedRootCategories = React.useMemo(() => {
+    if (!categories.length) return []
+    const pinned = []
+    const unpinned = []
+    
+    // Simple sort for root level
+    categories.forEach(cat => {
+      if (cat.isPinned) pinned.push(cat)
+      else unpinned.push(cat)
+    })
+    
+    return [...pinned, ...unpinned]
+  }, [categories])
 
   return (
-    <div className="space-y-6">
-      <PageHeader 
-        title="Category Management" 
-        subtitle="Manage book categories and hierarchy"
-        action={{
-          label: 'Add Category',
-          icon: Plus,
-          onClick: () => {
-            resetForm()
-            setIsModalOpen(true)
-          }
-        }}
-      />
-
-      {/* Main Category List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {/* Search Bar */}
-        <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center gap-2">
-          <Search className="text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search categories..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none outline-none flex-1 text-sm text-gray-600 placeholder-gray-400"
-          />
+    <div className="p-6 min-h-screen bg-gray-50/50">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Category Management</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Manage your book catalog hierarchy. Max depth: 4 levels.
+          </p>
         </div>
-
-        {/* Tree Content */}
-        <div className="overflow-x-auto min-h-[300px]">
-          {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading categories...</div>
-          ) : categories.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No categories found. Create one to get started.</div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {renderCategoryTree()}
-            </div>
-          )}
-        </div>
+        <button
+          onClick={() => handleOpenModal()}
+          className="flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-200 hover:shadow-xl active:scale-95"
+        >
+          <Plus size={20} />
+          <span className="font-medium">New Root Category</span>
+        </button>
       </div>
 
-      {/* Add/Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-gray-800">
-                {editingCategory ? 'Edit Category' : 'New Category'}
-              </h2>
+      {/* Main Content Area */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden min-h-[400px]">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+            <p className="text-sm text-gray-500">Loading hierarchy...</p>
+          </div>
+        ) : sortedRootCategories.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="bg-gray-50 p-4 rounded-full mb-4">
+              <FolderOpen className="w-12 h-12 text-gray-300" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">No categories found</h3>
+            <p className="text-gray-500 mb-6 max-w-sm">
+              Your catalog is empty. Create your first category to start organizing books.
+            </p>
+            <button
+              onClick={() => handleOpenModal()}
+              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+            >
+              Create Category
+            </button>
+          </div>
+        ) : (
+          <div className="p-6 space-y-4">
+            {sortedRootCategories.map(cat => (
+              <CategoryNode key={cat._id} category={cat} level={1} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-all">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">
+                  {editingCategory ? 'Edit Category' : parentCategory ? 'Add Subcategory' : 'Add Root Category'}
+                </h3>
+                {parentCategory && !editingCategory && (
+                  <div className="flex items-center gap-1 text-xs text-blue-600 mt-1">
+                    <CornerDownRight size={12} />
+                    <span>Parent: <span className="font-semibold">{parentCategory.name}</span></span>
+                  </div>
+                )}
+              </div>
               <button 
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
               >
-                <Trash2 className="w-5 h-5" transform="rotate(45)" />
+                {/* Close Icon could go here */}
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Modal Form */}
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <FormInput
                 label="Category Name"
-                name="name"
                 value={formData.name}
-                onChange={handleInputChange}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Science Fiction"
                 required
+                autoFocus
               />
-
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Parent Category (Optional)</label>
-                <select
-                  name="parentId"
-                  value={formData.parentId}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-neutral-900 focus:border-transparent outline-none transition-all"
-                >
-                  <option value="">None (Root Category)</option>
-                  {categories
-                    .filter(c => c._id !== editingCategory?._id) // Prevent self-parenting
-                    .map(c => (
-                    <option key={c._id} value={c._id}>
-                      {c.name} (Level {c.level})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+              
               <FormInput
                 label="Description"
-                name="description"
+                type="textarea"
                 value={formData.description}
-                onChange={handleInputChange}
-                textarea
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Optional description about this category..."
+                rows={3}
               />
 
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Cover Image</label>
-                <ImageUpload 
-                  onImageSelect={handleImageChange}
-                  preview={editingCategory?.backgroundImage}
-                />
-              </div>
+              {/* Only show image upload for root categories */}
+              {(!parentCategory || (editingCategory && editingCategory.level === 1)) && (
+                <div className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200">
+                  <ImageUpload
+                    label="Cover Image (Root Only)"
+                    onImageSelect={setCategoryImage}
+                    existingImageUrl={editingCategory?.backgroundImage}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-2 text-center">
+                    Recommended: 500x300px JPG/PNG
+                  </p>
+                </div>
+              )}
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                  onClick={() => setShowModal(false)}
+                  className="px-5 py-2.5 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 text-sm font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 font-medium"
+                  className="px-5 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 text-sm font-medium shadow-md transition-colors"
                 >
                   {editingCategory ? 'Save Changes' : 'Create Category'}
                 </button>

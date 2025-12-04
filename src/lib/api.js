@@ -153,51 +153,7 @@ export async function apiPatch(path, data) {
 
 // --- Category API functions ---
 
-// Fetches the hierarchical tree (for Category Management UI)
-export async function getAllCategories() {
-  return apiGet('/categories');
-}
 
-// Fetches a flat list (for Dropdowns/Filters)
-export async function getCategoryList() {
-  return apiGet('/categories/list');
-}
-
-export async function getCategoryById(categoryId) {
-  return apiGet(`/categories/${categoryId}`);
-}
-
-export async function createCategory(categoryData, imageFile = null) {
-  const formData = new FormData();
-  formData.append('name', categoryData.name);
-  if (categoryData.description) formData.append('description', categoryData.description);
-  if (categoryData.parentId) formData.append('parentId', categoryData.parentId);
-  
-  if (imageFile) {
-    formData.append('backgroundImage', imageFile);
-  }
-  
-  // Using apiPostForm for multipart/form-data
-  return apiPostForm('/categories', formData);
-}
-
-export async function updateCategory(categoryId, categoryData, imageFile = null) {
-  const formData = new FormData();
-  if (categoryData.name) formData.append('name', categoryData.name);
-  if (categoryData.description !== undefined) formData.append('description', categoryData.description);
-  
-  if (imageFile) {
-    formData.append('backgroundImage', imageFile);
-  }
-  
-  return apiPatchForm(`/categories/${categoryId}`, formData);
-}
-
-export async function deleteCategory(categoryId) {
-  return apiDelete(`/categories/${categoryId}`);
-}
-
-// --- REMOVED SUBCATEGORY FUNCTIONS (Merged into Category) ---
 
 // Book API functions
 export async function getBooksByCategory(categoryId, params = {}) {
@@ -394,4 +350,57 @@ export async function updateFreeContent(id, contentData) {
 
 export async function deleteFreeContent(id) {
   return apiDelete(`/free-content/${id}`);
+}
+
+export async function getAllCategories() {
+  return apiGet('/categories');
+}
+
+export async function getCategoryList() {
+  return apiGet('/categories/list');
+}
+
+export async function getCategoryById(categoryId) {
+  return apiGet(`/categories/${categoryId}`);
+}
+
+export async function createCategory(categoryData, imageFile = null) {
+  const formData = new FormData();
+  formData.append('name', categoryData.name);
+  if (categoryData.description) formData.append('description', categoryData.description);
+  
+  // FIX: Ensure parentId is only appended if it's a real value
+  if (categoryData.parentId) formData.append('parentId', categoryData.parentId);
+  
+  // FIX: Support creating a pinned category directly
+  if (categoryData.isPinned !== undefined) {
+    formData.append('isPinned', categoryData.isPinned);
+  }
+  
+  if (imageFile) {
+    formData.append('backgroundImage', imageFile);
+  }
+  
+  return apiPostForm('/categories', formData);
+}
+
+export async function updateCategory(categoryId, categoryData, imageFile = null) {
+  const formData = new FormData();
+  if (categoryData.name) formData.append('name', categoryData.name);
+  if (categoryData.description !== undefined) formData.append('description', categoryData.description);
+  
+  // ✅ FIX: Explicitly append 'isPinned' so the backend receives the update
+  if (categoryData.isPinned !== undefined) {
+    formData.append('isPinned', categoryData.isPinned);
+  }
+  
+  if (imageFile) {
+    formData.append('backgroundImage', imageFile);
+  }
+  
+  return apiPatchForm(`/categories/${categoryId}`, formData);
+}
+
+export async function deleteCategory(categoryId) {
+  return apiDelete(`/categories/${categoryId}`);
 }
