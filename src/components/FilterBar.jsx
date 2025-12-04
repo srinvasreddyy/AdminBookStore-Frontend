@@ -5,14 +5,15 @@ const FilterBar = ({ filters, setFilters, onApplyFilters, onClearFilters, catego
   return (
     <div className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200 sticky top-0 z-10 mb-6">
       <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
+        
         {/* Search Bar */}
         <div className="flex-1 min-w-[200px] sm:min-w-[250px]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search books..."
-              className="w-full pl-10 pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 text-sm"
+              placeholder="Search by title, author, ISBN..."
+              className="w-full pl-10 pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 text-sm transition-all"
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               onKeyDown={(e) => e.key === 'Enter' && onApplyFilters()}
@@ -20,11 +21,11 @@ const FilterBar = ({ filters, setFilters, onApplyFilters, onClearFilters, catego
           </div>
         </div>
 
-        {/* Category Filter */}
+        {/* Category Dropdown (Root Levels) */}
         <div className="relative w-full sm:w-auto min-w-[160px]">
           <select
             className="appearance-none w-full px-3 sm:px-4 py-2 sm:py-2.5 pr-8 sm:pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 cursor-pointer bg-white text-sm"
-            value={filters.category || ""}
+            value={filters.category}
             onChange={(e) => setFilters({ ...filters, category: e.target.value })}
           >
             <option value="">All Categories</option>
@@ -51,7 +52,7 @@ const FilterBar = ({ filters, setFilters, onApplyFilters, onClearFilters, catego
           <SlidersHorizontal className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>
 
-        {/* Price Range */}
+        {/* Price Inputs */}
         <div className="flex items-center gap-2 w-full sm:w-auto bg-gray-50 p-1 rounded-lg border border-gray-200">
           <input
             type="number"
@@ -80,7 +81,7 @@ const FilterBar = ({ filters, setFilters, onApplyFilters, onClearFilters, catego
           </button>
           
           {(filters.search || filters.minPrice || filters.maxPrice || filters.status || filters.category) && (
-            <button
+             <button
               onClick={onClearFilters}
               className="px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium border border-transparent hover:border-red-100"
               title="Clear Filters"

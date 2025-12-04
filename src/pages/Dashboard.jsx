@@ -1,172 +1,328 @@
-import React, { useEffect, useState } from "react";
-import { CircleUser } from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { apiGet } from "../lib/api";
+import BookCard from "../components/BookCard";
+import FilterBar from "../components/FilterBar";
+import CategorySidebar from "../components/CategorySidebar";
+import CategoryBreadcrumbs from "../components/CategoryBreadcrumbs";
+import { BookOpen, Menu, X, Folder, Image as ImageIcon, ArrowRight, Layers } from "lucide-react";
 
 const Dashboard = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // --- Data State ---
+  const [categories, setCategories] = useState([]);
+  const [books, setBooks] = useState([]);
   
-  // State for the date filter dropdown
-  const [filterDays, setFilterDays] = useState(30);
+  // --- UI State ---
+  const [loading, setLoading] = useState(true); // Initial load (categories)
+  const [loadingBooks, setLoadingBooks] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchRecentOrders() {
-      setLoading(true);
-      setError(null);
-      try {
-        // Fetch recent orders for admin (limit to 6)
-        // Note: We fetch the standard set and then filter client-side as requested
-        const resp = await apiGet('/orders/admin?limit=6');
-        const docs = resp.data?.orders || [];
-        if (!cancelled) setOrders(docs);
-      } catch (err) {
-        console.error('Failed to fetch admin orders:', err);
-        if (!cancelled) setError('Failed to load recent orders');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    fetchRecentOrders();
-    return () => { cancelled = true };
-  }, []);
-
-  // Filter orders based on the selected number of days
-  const filteredOrders = orders.filter(order => {
-    if (!order.date) return false;
-    const orderDate = new Date(order.date);
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - filterDays);
-    // Set time to midnight for accurate day comparison if needed, 
-    // but direct comparison works for "last X days" sliding window
-    return orderDate >= cutoffDate;
+  // --- Filter & Navigation State ---
+  // We use `currentCategory` object for the Tree View / Breadcrumbs logic
+  const [currentCategory, setCurrentCategory] = useState(null); 
+  const [filters, setFilters] = useState({
+    search: "",
+    category: "", // This syncs with FilterBar dropdown (ID)
+    status: "",
+    minPrice: "",
+    maxPrice: "",
   });
 
+  // 1. Initial Load: Fetch full Category Tree
+  useEffect(() => {
+    async function init() {
+      try {
+        const response = await apiGet("/categories");
+        setCategories(response.data || []);
+      } catch (error) {
+        console.error("Failed to load categories", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    init();
+  }, []);
+
+  // 2. Logic: Determine what to show (Subcategories Grid vs Books Grid)
+  // If the current category has children, we default to showing them in a grid.
+  // Unless the user is searching or explicit filters are active.
+  const subCategories = currentCategory 
+    ? (currentCategory.children || []) 
+    : categories; // Root categories if no selection
+
+  const showBooksMode = (currentCategory && subCategories.length === 0) || filters.search;
+
+  // 3. Fetch Books when in Book Mode
+  useEffect(() => {
+    if (showBooksMode) {
+      fetchBooks();
+    }
+  }, [currentCategory, filters.status, filters.minPrice, filters.maxPrice, filters.search, showBooksMode]);
+
+  const fetchBooks = async () => {
+    setLoadingBooks(true);
+    try {
+      const params = new URLSearchParams();
+      // Use the selected category ID (from tree or dropdown)
+      const activeCatId = currentCategory?._id || filters.category;
+      if (activeCatId) params.append("category", activeCatId);
+      if (filters.search) params.append("search", filters.search);
+
+      const response = await apiGet(`/books?${params.toString()}`);
+      let docs = response.data?.docs || response.data || [];
+
+      // Client-side filtering for demo (backend usually handles these)
+      if (filters.minPrice) docs = docs.filter(b => b.price >= Number(filters.minPrice));
+      if (filters.maxPrice) docs = docs.filter(b => b.price <= Number(filters.maxPrice));
+      if (filters.status === 'in-stock') docs = docs.filter(b => b.stock > 0);
+      else if (filters.status === 'low-stock') docs = docs.filter(b => b.stock > 0 && b.stock < 5);
+
+      setBooks(docs);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingBooks(false);
+    }
+  };
+
+  // --- Handlers ---
+
+  // Handle tree navigation or grid click
+  const handleCategorySelect = (categoryId) => {
+    // Recursive find
+    const findCat = (id, list) => {
+      for (const item of list) {
+        if (item._id === id) return item;
+        if (item.children) {
+          const found = findCat(id, item.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    if (!categoryId) {
+      setCurrentCategory(null);
+      setFilters(prev => ({ ...prev, category: "" }));
+    } else {
+      const found = findCat(categoryId, categories);
+      setCurrentCategory(found);
+      setFilters(prev => ({ ...prev, category: categoryId }));
+    }
+    
+    setMobileMenuOpen(false);
+    // Clear search to exit search mode and see the category structure
+    setFilters(prev => ({ ...prev, search: "" }));
+  };
+
+  const handleApplyFilters = () => {
+    // Triggered by "Apply" button - specifically for Price/Status
+    fetchBooks();
+  };
+
+  const handleClearFilters = () => {
+    setFilters({ search: "", category: "", status: "", minPrice: "", maxPrice: "" });
+    setCurrentCategory(null);
+  };
+
   return (
-    <>
-      {/* Top Header */}
-      <header className="bg-white border-b sticky top-0 z-50 max-lg:z-10 max-lg:top-11 border-gray-200 px-6 py-3 flex items-center justify-between max-md:flex-col max-md:items-start max-md:gap-3">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center border-4">
-              <img src="https://avatar.iran.liara.run/public" alt="Avatar" />
-            </div>
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-gray-800">
-              Welcome to Admin Panel
-            </h2>
-            <p className="text-gray-500 text-xs">
-              Have an look at all the metrics within your dashboard.
-            </p>
-          </div>
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
+      
+      {/* === MOBILE HEADER === */}
+      <header className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between z-30 sticky top-0">
+        <div className="flex items-center gap-2 font-bold text-gray-900">
+          <BookOpen className="w-6 h-6" /> <span className="text-lg">BookStore</span>
         </div>
-        <button className="p-3 max-lg:hidden hover:bg-gray-100 rounded-full transition-colors self-end max-md:self-start">
-          <CircleUser className="w-6 h-6 text-gray-400" />
+        <button 
+          onClick={() => setMobileMenuOpen(true)}
+          className="p-2 bg-gray-100 rounded-lg text-gray-600 hover:bg-gray-200"
+        >
+          <Menu size={24}/>
         </button>
       </header>
 
-      {/* Dashboard Content */}
-      <div className="p-8 max-md:p-4">
-       
-        {/* Analytics Section */}
-        <div className="grid grid-cols-1 gap-8 mb-8">
-          {/* Recent Orders */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm max-md:p-4">
-            <div className="flex items-center justify-between mb-6 max-sm:flex-col max-sm:items-start max-sm:gap-2">
-              <h3 className="text-xl font-bold text-gray-800">
-                Recent Orders
-              </h3>
-              
-              {/* Date Range Dropdown */}
-              <div className="relative">
-                <select
-                  value={filterDays}
-                  onChange={(e) => setFilterDays(Number(e.target.value))}
-                  className="appearance-none text-sm text-gray-600 font-medium border border-gray-300 px-4 py-2 pr-8 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black/5 cursor-pointer bg-white"
-                  style={{ backgroundImage: 'none' }} // Removing default arrow to style it or keep it simple
-                >
-                  <option value={10}>📅 Last 10 Days</option>
-                  <option value={20}>📅 Last 20 Days</option>
-                  <option value={30}>📅 Last 30 Days</option>
-                  <option value={40}>📅 Last 40 Days</option>
-                  <option value={50}>📅 Last 50 Days</option>
-                </select>
-                {/* Custom Arrow Pointer for better UI */}
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                  <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                  </svg>
+      {/* === SIDEBAR (Desktop & Mobile) === */}
+      <aside 
+        className={`
+          fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static
+          ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
+      >
+        <div className="h-full flex flex-col">
+            {/* Sidebar Header */}
+            <div className="p-6 border-b border-gray-100 hidden md:flex items-center gap-3 text-gray-900">
+                <div className="w-9 h-9 bg-black text-white rounded-xl flex items-center justify-center shadow-lg shadow-gray-200">
+                    <BookOpen size={20} fill="currentColor" />
                 </div>
-              </div>
+                <span className="font-bold text-xl tracking-tight">BookStore</span>
+            </div>
+            
+            {/* Mobile Sidebar Close */}
+            <div className="md:hidden p-4 border-b flex justify-between items-center bg-gray-50">
+               <span className="font-semibold text-gray-700">Browse Categories</span>
+               <button onClick={() => setMobileMenuOpen(false)}>
+                 <X size={20} className="text-gray-500"/>
+               </button>
             </div>
 
-            {/* Orders Table */}
-            <div className="overflow-x-auto">
-              {loading ? (
-                <div className="p-6 text-center text-gray-500">Loading recent orders...</div>
-              ) : error ? (
-                <div className="p-6 text-center text-red-600">{error}</div>
-              ) : filteredOrders.length === 0 ? (
-                 <div className="p-12 text-center text-gray-500">
-                   No orders found in the last {filterDays} days.
-                 </div>
-              ) : (
-                <table className="w-full min-w-[600px]">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      {["Order ID", "Book Title", "Customer", "Date", "Price", "Status"].map((head) => (
-                        <th
-                          key={head}
-                          className="text-left py-3 px-4 text-sm font-semibold text-gray-500"
-                        >
-                          {head}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredOrders.map((order) => (
-                      <tr
-                        key={order.id}
-                        className="border-b border-gray-100 hover:bg-gray-50"
-                      >
-                        <td className="py-3 px-4 text-gray-700 font-medium">
-                          {order.id}
-                        </td>
-                        <td className="py-3 px-4 text-gray-800">{order.books?.[0]?.title || '—'}</td>
-                        <td className="py-3 px-4 text-gray-700">
-                          {order?.shippingAddress?.fullName || '—'}
-                        </td>
-                        <td className="py-3 px-4 text-gray-500">{new Date(order.date).toLocaleDateString()}</td>
-                        <td className="py-3 px-4 font-semibold text-gray-800">
-                          &#8377;{order.total}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              order.status === "delivered"
-                                ? "bg-green-100 text-green-700"
-                                : order.status === "pending"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+            {/* Tree Content */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                {loading ? (
+                    <div className="space-y-4 animate-pulse px-2">
+                        {[1,2,3,4].map(i => <div key={i} className="h-8 bg-gray-100 rounded-md w-full"/>)}
+                    </div>
+                ) : (
+                    <CategorySidebar 
+                        categories={categories} 
+                        selectedCategoryId={currentCategory?._id} 
+                        onSelect={handleCategorySelect} 
+                    />
+                )}
             </div>
-          </div>
+            
+            <div className="p-4 border-t border-gray-100 text-xs text-gray-400 text-center">
+                © 2024 BookStore App
+            </div>
         </div>
+      </aside>
+
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden" 
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* === MAIN CONTENT === */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+            <div className="max-w-7xl mx-auto min-h-[calc(100vh-4rem)]">
+                
+                {/* 1. Breadcrumbs Navigation */}
+                <CategoryBreadcrumbs 
+                   currentCategory={currentCategory} 
+                   categories={categories} 
+                   onNavigate={(cat) => handleCategorySelect(cat?._id || null)}
+                />
+
+                {/* 2. Page Title */}
+                <div className="mb-6">
+                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                        {currentCategory ? currentCategory.name : "Explore Our Collection"}
+                    </h1>
+                    <p className="text-gray-500 mt-2 text-sm max-w-2xl">
+                        {currentCategory?.description || "Browse by category or search below to find your next read."}
+                    </p>
+                </div>
+
+                {/* 3. Filter Bar (Categories passed for dropdown) */}
+                <FilterBar 
+                    filters={filters}
+                    setFilters={setFilters}
+                    onApplyFilters={handleApplyFilters}
+                    onClearFilters={handleClearFilters}
+                    categories={categories} 
+                />
+
+                {/* 4. CONTENT VIEW SWITCHER */}
+                
+                {/* MODE A: SUBCATEGORY BROWSING (Folder View) */}
+                {!showBooksMode && (
+                  <div className="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                     <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider">
+                            {currentCategory ? `Subcategories in ${currentCategory.name}` : "Shop by Category"}
+                        </h2>
+                     </div>
+                     
+                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {subCategories.map((cat) => (
+                           <div 
+                             key={cat._id}
+                             onClick={() => handleCategorySelect(cat._id)}
+                             className="group bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg hover:border-gray-300 transition-all cursor-pointer flex flex-col items-center text-center gap-3"
+                           >
+                              {/* Icon / Image Placeholder */}
+                              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors duration-300">
+                                 {cat.backgroundImage ? (
+                                    <img src={cat.backgroundImage} alt={cat.name} className="w-full h-full object-cover rounded-full" />
+                                 ) : (
+                                    <Folder size={28} />
+                                 )}
+                              </div>
+                              <div>
+                                 <h3 className="font-semibold text-gray-900 group-hover:text-black">{cat.name}</h3>
+                                 <p className="text-xs text-gray-400 mt-1">
+                                    {cat.children?.length > 0 ? `${cat.children.length} sub-categories` : "Browse Books"}
+                                 </p>
+                              </div>
+                           </div>
+                        ))}
+                     </div>
+                     
+                     {/* Bypass option if user wants to see all books inside this parent immediately */}
+                     {currentCategory && (
+                       <div className="mt-10 text-center">
+                          <button 
+                            onClick={() => setFilters(prev => ({...prev, search: " "}))} // Space triggers search mode
+                            className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-colors bg-white px-4 py-2 rounded-full border border-gray-200 hover:border-gray-400"
+                          >
+                            Skip categories and view all books here <ArrowRight size={14}/>
+                          </button>
+                       </div>
+                     )}
+                  </div>
+                )}
+
+                {/* MODE B: BOOKS LISTING */}
+                {showBooksMode && (
+                  <div className="animate-in fade-in duration-500">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider">
+                           {filters.search.trim() ? "Search Results" : `Books in ${currentCategory?.name || 'All'}`}
+                        </h2>
+                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-md">{books.length} items</span>
+                      </div>
+
+                      {loadingBooks ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                              {[1,2,3,4,5,6,7,8].map(i => (
+                                <div key={i} className="bg-white rounded-2xl h-80 p-4 border border-gray-100">
+                                   <div className="w-full h-48 bg-gray-100 rounded-xl mb-4 animate-pulse"></div>
+                                   <div className="h-4 bg-gray-100 rounded w-3/4 mb-2 animate-pulse"></div>
+                                   <div className="h-4 bg-gray-100 rounded w-1/2 animate-pulse"></div>
+                                </div>
+                              ))}
+                          </div>
+                      ) : books.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
+                            {books.map((book) => (
+                                <BookCard key={book._id} book={book} />
+                            ))}
+                          </div>
+                      ) : (
+                          <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl border border-gray-100 border-dashed">
+                              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                                  <ImageIcon size={32} />
+                              </div>
+                              <h3 className="text-lg font-semibold text-gray-900">No books found</h3>
+                              <p className="text-gray-500 max-w-xs mx-auto mb-6 text-sm">
+                                  Try adjusting your price filters or search for something else.
+                              </p>
+                              <button 
+                                  onClick={handleClearFilters}
+                                  className="px-5 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-all shadow-md"
+                              >
+                                  Clear Filters
+                              </button>
+                          </div>
+                      )}
+                  </div>
+                )}
+            </div>
+        </main>
       </div>
-    </>
+    </div>
   );
 };
 

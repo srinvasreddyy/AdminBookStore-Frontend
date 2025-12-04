@@ -1,10 +1,24 @@
-import React, { useState } from 'react';
-import { ChevronRight, Folder, FolderOpen } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, Folder, FolderOpen, Layers } from 'lucide-react';
 
 const CategoryItem = ({ category, selectedCategoryId, onSelect, depth = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasChildren = category.children && category.children.length > 0;
   const isSelected = selectedCategoryId === category._id;
+
+  // Auto-expand if a child is selected
+  useEffect(() => {
+    if (hasChildren) {
+      // Check if the selected ID is this category or one of its descendants
+      const isDescendantSelected = (cat) => {
+        if (cat._id === selectedCategoryId) return true;
+        return cat.children?.some(isDescendantSelected);
+      };
+      if (isDescendantSelected(category)) {
+        setIsExpanded(true);
+      }
+    }
+  }, [selectedCategoryId, category, hasChildren]);
 
   const handleExpand = (e) => {
     e.stopPropagation();
@@ -13,6 +27,7 @@ const CategoryItem = ({ category, selectedCategoryId, onSelect, depth = 0 }) => 
 
   const handleClick = () => {
     onSelect(category._id);
+    if (!isExpanded && hasChildren) setIsExpanded(true);
   };
 
   return (
@@ -77,7 +92,6 @@ const CategorySidebar = ({ categories, selectedCategoryId, onSelect }) => {
         </h3>
       </div>
       
-      {/* "All Books" Option */}
       <div 
         className={`
           flex items-center gap-3 px-3 py-2 my-1 mb-3 rounded-lg cursor-pointer transition-all
@@ -88,7 +102,7 @@ const CategorySidebar = ({ categories, selectedCategoryId, onSelect }) => {
         `}
         onClick={() => onSelect(null)}
       >
-        <Folder size={16} className={!selectedCategoryId ? 'text-white' : 'text-gray-400'} />
+        <Layers size={16} className={!selectedCategoryId ? 'text-white' : 'text-gray-400'} />
         <span className="text-sm font-medium">All Books</span>
       </div>
 
