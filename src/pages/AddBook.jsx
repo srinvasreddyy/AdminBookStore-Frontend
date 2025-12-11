@@ -8,8 +8,7 @@ import {
   User, 
   Calendar,
   Save,
-  X,
-  ChevronRight
+  X
 } from 'lucide-react'
 import FormSection from '../components/FormSection'
 import FormInput from '../components/FormInput'
@@ -26,7 +25,7 @@ const AddBook = ({ bookId }) => {
     isbn: '',
     publisher: '',
     publicationDate: '',
-    category: '', // Stores the final selected category ID
+    category: '', 
     language: '',
     numberOfPages: '',
     price: '',
@@ -48,9 +47,9 @@ const AddBook = ({ bookId }) => {
   
   // Category Handling
   const [categoryTree, setCategoryTree] = useState([])
-  const [selectedPath, setSelectedPath] = useState([]) // Array of selected category objects
+  const [selectedPath, setSelectedPath] = useState([]) 
   const [loadingCategories, setLoadingCategories] = useState(true)
-  const [initialCategoryLoaded, setInitialCategoryLoaded] = useState(null) // For edit mode sync
+  const [initialCategoryLoaded, setInitialCategoryLoaded] = useState(null) 
 
   useEffect(() => {
     fetchCategories()
@@ -74,7 +73,7 @@ const AddBook = ({ bookId }) => {
   const fetchCategories = async () => {
     try {
       setLoadingCategories(true)
-      const response = await getAllCategories() // Returns tree
+      const response = await getAllCategories() 
       setCategoryTree(response.data || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -84,7 +83,6 @@ const AddBook = ({ bookId }) => {
     }
   }
 
-  // Recursive helper to find path to a specific category ID
   const findPathToCategory = (nodes, targetId, path = []) => {
     for (const node of nodes) {
       if (node._id === targetId) return [...path, node]
@@ -112,7 +110,7 @@ const AddBook = ({ bookId }) => {
         language: book.language || '',
         numberOfPages: book.numberOfPages || '',
         price: book.price || '',
-        salePrice: book.salePrice || '',
+        salePrice: book.salePrice !== undefined ? book.salePrice : '',
         deliveryFee: book.deliveryCharge || '',
         stock: book.stock || '',
         format: book.format || '',
@@ -126,7 +124,6 @@ const AddBook = ({ bookId }) => {
 
       setCoverImages(book.coverImages || [])
       
-      // Store ID to sync with tree later
       if (book.category?._id) {
         setInitialCategoryLoaded(book.category._id)
       }
@@ -139,30 +136,23 @@ const AddBook = ({ bookId }) => {
     }
   }
 
-  // --- Category Selection Logic ---
   const handleCategoryChange = (level, selectedId) => {
-    // 1. Find the selected category object in the current level's options
     const currentOptions = level === 0 ? categoryTree : selectedPath[level - 1]?.children || []
     const selectedCategory = currentOptions.find(c => c._id === selectedId)
 
     if (!selectedCategory) return
 
-    // 2. Update the path: Keep parents up to this level, add new selection
     const newPath = [...selectedPath.slice(0, level), selectedCategory]
     setSelectedPath(newPath)
     
-    // 3. Update form data with the most specific category selected
     setFormData(prev => ({ ...prev, category: selectedCategory._id }))
   }
 
-  // Determine options for the next dropdown
   const getOptionsForLevel = (level) => {
     if (level === 0) return categoryTree
     const parent = selectedPath[level - 1]
     return parent?.children || []
   }
-
-  // --- End Category Logic ---
 
   const formats = [
     { value: 'Hardcover', label: 'Hardcover' },
@@ -195,13 +185,12 @@ const AddBook = ({ bookId }) => {
   const validateForm = () => {
     const newErrors = {}
     
+    // STRICT VALIDATION: Only these 5 fields are required
     if (!formData.title.trim()) newErrors.title = 'Title is required'
     if (!formData.author.trim()) newErrors.author = 'Author is required'
-    if (!formData.category) newErrors.category = 'Category is required'
-    if (!formData.price) newErrors.price = 'Price is required'
+    if (!formData.price) newErrors.price = 'Regular price is required'
+    if (formData.salePrice === '') newErrors.salePrice = 'Sale price is required'
     if (!formData.deliveryFee) newErrors.deliveryFee = 'Delivery fee is required'
-    if (!formData.stock) newErrors.stock = 'Stock quantity is required'
-    if (!formData.fullDescription.trim()) newErrors.fullDescription = 'Full description is required'
     
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -222,6 +211,7 @@ const AddBook = ({ bookId }) => {
       
       Object.keys(formData).forEach(key => {
         const value = formData[key]
+        // Only append if value exists (handles optional fields being empty)
         if (value === '' || value === null || value === undefined) return
 
         if (key === 'tags' && typeof value === 'string') {
@@ -366,18 +356,17 @@ const AddBook = ({ bookId }) => {
             {/* Left Column - Main Information */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Category Selection Section */}
+              {/* Category Selection Section (Optional) */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Tag className="w-5 h-5 text-gray-400" />
-                  <h3 className="text-base font-semibold text-gray-800">Category Selection</h3>
+                  <h3 className="text-base font-semibold text-gray-800">Category Selection (Optional)</h3>
                 </div>
                 
                 {loadingCategories ? (
                    <div className="text-sm text-gray-500">Loading categories...</div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Always show Root Level */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {/* Level 1 */}
                       <div className="flex flex-col gap-1">
@@ -394,7 +383,7 @@ const AddBook = ({ bookId }) => {
                         </select>
                       </div>
 
-                      {/* Level 2 - Show if Level 1 selected and has children */}
+                      {/* Level 2 */}
                       {selectedPath.length > 0 && getOptionsForLevel(1).length > 0 && (
                         <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
                           <label className="text-xs font-bold text-gray-500 uppercase">Sub Category</label>
@@ -410,57 +399,7 @@ const AddBook = ({ bookId }) => {
                           </select>
                         </div>
                       )}
-
-                      {/* Level 3 - Show if Level 2 selected and has children */}
-                      {selectedPath.length > 1 && getOptionsForLevel(2).length > 0 && (
-                        <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
-                          <label className="text-xs font-bold text-gray-500 uppercase">Sub Category (L3)</label>
-                          <select 
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
-                            value={selectedPath[2]?._id || ''}
-                            onChange={(e) => handleCategoryChange(2, e.target.value)}
-                          >
-                            <option value="">Select...</option>
-                            {getOptionsForLevel(2).map(cat => (
-                              <option key={cat._id} value={cat._id}>{cat.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      {/* Level 4 - Show if Level 3 selected and has children */}
-                      {selectedPath.length > 2 && getOptionsForLevel(3).length > 0 && (
-                        <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
-                          <label className="text-xs font-bold text-gray-500 uppercase">Sub Category (L4)</label>
-                          <select 
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
-                            value={selectedPath[3]?._id || ''}
-                            onChange={(e) => handleCategoryChange(3, e.target.value)}
-                          >
-                            <option value="">Select...</option>
-                            {getOptionsForLevel(3).map(cat => (
-                              <option key={cat._id} value={cat._id}>{cat.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
                     </div>
-
-                    {/* Breadcrumb Visualization */}
-                    {selectedPath.length > 0 && (
-                       <div className="mt-4 pt-3 border-t border-gray-100 flex items-center flex-wrap gap-2 text-sm text-gray-600">
-                          <span className="font-medium text-gray-400">Selected Path:</span>
-                          {selectedPath.map((cat, idx) => (
-                            <React.Fragment key={cat._id}>
-                              {idx > 0 && <ChevronRight className="w-4 h-4 text-gray-400" />}
-                              <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-800 font-medium">
-                                {cat.name}
-                              </span>
-                            </React.Fragment>
-                          ))}
-                       </div>
-                    )}
-                    {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
                   </div>
                 )}
               </div>
@@ -474,7 +413,7 @@ const AddBook = ({ bookId }) => {
                     placeholder="Enter book title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    required
+                    required={true}
                     error={errors.title}
                     icon={BookOpen}
                   />
@@ -484,7 +423,7 @@ const AddBook = ({ bookId }) => {
                     placeholder="Enter author name"
                     value={formData.author}
                     onChange={handleInputChange}
-                    required
+                    required={true}
                     error={errors.author}
                     icon={User}
                   />
@@ -494,6 +433,7 @@ const AddBook = ({ bookId }) => {
                     placeholder="978-3-16-148410-0"
                     value={formData.isbn}
                     onChange={handleInputChange}
+                    required={false}
                   />
                   <FormInput
                     label="Publisher"
@@ -501,6 +441,7 @@ const AddBook = ({ bookId }) => {
                     placeholder="Enter publisher name"
                     value={formData.publisher}
                     onChange={handleInputChange}
+                    required={false}
                   />
                   <FormInput
                     label="Publication Date"
@@ -508,15 +449,17 @@ const AddBook = ({ bookId }) => {
                     type="date"
                     value={formData.publicationDate}
                     onChange={handleInputChange}
+                    required={false}
                     icon={Calendar}
                   />
                   <FormInput
-                    label="Number of numberOfPages"
+                    label="Number of Pages"
                     name="numberOfPages"
                     type="number"
                     placeholder="e.g., 350"
                     value={formData.numberOfPages}
                     onChange={handleInputChange}
+                    required={false}
                   />
                 </div>
               </FormSection>
@@ -531,6 +474,7 @@ const AddBook = ({ bookId }) => {
                     value={formData.format}
                     onChange={handleInputChange}
                     options={formats}
+                    required={false}
                   />
                   <FormInput
                     label="Language"
@@ -539,6 +483,7 @@ const AddBook = ({ bookId }) => {
                     value={formData.language}
                     onChange={handleInputChange}
                     options={languages}
+                    required={false}
                   />
                 </div>
                 <div className="mt-4 space-y-4">
@@ -550,6 +495,7 @@ const AddBook = ({ bookId }) => {
                     placeholder="Brief description..."
                     value={formData.shortDescription}
                     onChange={handleInputChange}
+                    required={false}
                   />
                   <FormInput
                     label="Full Description"
@@ -559,8 +505,7 @@ const AddBook = ({ bookId }) => {
                     placeholder="Detailed description..."
                     value={formData.fullDescription}
                     onChange={handleInputChange}
-                    required
-                    error={errors.fullDescription}
+                    required={false}
                   />
                   <FormInput
                     label="Tags"
@@ -569,6 +514,7 @@ const AddBook = ({ bookId }) => {
                     value={formData.tags}
                     onChange={handleInputChange}
                     icon={Tag}
+                    required={false}
                   />
                 </div>
               </FormSection>
@@ -585,9 +531,6 @@ const AddBook = ({ bookId }) => {
                   maxImages={10}
                   existingImages={isEditMode ? coverImages.filter(img => typeof img === 'string') : []}
                 />
-                {errors.coverImages && (
-                  <p className="text-red-500 text-xs mt-1">{errors.coverImages}</p>
-                )}
               </FormSection>
 
               {/* Pricing */}
@@ -600,7 +543,7 @@ const AddBook = ({ bookId }) => {
                   placeholder="0.00"
                   value={formData.price}
                   onChange={handleInputChange}
-                  required
+                  required={true}
                   error={errors.price}
                   icon={DollarSign}
                 />
@@ -612,6 +555,8 @@ const AddBook = ({ bookId }) => {
                   placeholder="0.00"
                   value={formData.salePrice}
                   onChange={handleInputChange}
+                  required={true}
+                  error={errors.salePrice}
                   icon={DollarSign}
                 />
                 <FormInput
@@ -622,13 +567,13 @@ const AddBook = ({ bookId }) => {
                   placeholder="0.00"
                   value={formData.deliveryFee}
                   onChange={handleInputChange}
-                  required
+                  required={true}
                   error={errors.deliveryFee}
                   icon={DollarSign}
                 />
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-sm text-neutral-800">
-                    <span className="font-semibold">Tip:</span> Leave sale price empty if the book is not on sale
+                    <span className="font-semibold">Tip:</span> Set sale price to 0 if not on sale.
                   </p>
                 </div>
               </FormSection>
@@ -642,11 +587,10 @@ const AddBook = ({ bookId }) => {
                   placeholder="e.g., 100"
                   value={formData.stock}
                   onChange={handleInputChange}
-                  required
-                  error={errors.stock}
+                  required={false}
                   icon={Package}
                 />
-                <div className="space-y-3">
+                 <div className="space-y-3">
                   <label className="flex items-center gap-3 cursor-pointer group">
                     <input
                       type="checkbox"
@@ -689,7 +633,7 @@ const AddBook = ({ bookId }) => {
                       <span className="text-sm font-semibold text-gray-700 group-hover:text-neutral-600 transition-colors">
                         Old Book
                       </span>
-                      <p className="text-xs text-gray-500">Mark as vintage/used</p>
+                      <p className="text-xs text-gray-500">Mark as pre-owned/used</p>
                     </div>
                   </label>
                 </div>

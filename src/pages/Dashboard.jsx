@@ -208,10 +208,10 @@ const Dashboard = () => {
                 {/* 2. Page Title */}
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                        {currentCategory ? currentCategory.name : "Explore Our Collection"}
+                        {currentCategory ? currentCategory.name : "Explore Collection"}
                     </h1>
                     <p className="text-gray-500 mt-2 text-sm max-w-2xl">
-                        {currentCategory?.description || "Browse by category or search below to find your next read."}
+                        {currentCategory?.description || "Browse by category or search below to find book"}
                     </p>
                 </div>
 
@@ -231,7 +231,7 @@ const Dashboard = () => {
                   <div className="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                      <div className="flex items-center justify-between mb-4">
                         <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider">
-                            {currentCategory ? `Subcategories in ${currentCategory.name}` : "Shop by Category"}
+                            {currentCategory ? `Subcategories in ${currentCategory.name}` : "View by Category"}
                         </h2>
                      </div>
                      
