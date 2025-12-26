@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiGet } from "../lib/api";
 import BookCard from "../components/BookCard";
-import FilterBar from "../components/FilterBar";
 import CategorySidebar from "../components/CategorySidebar";
 import CategoryBreadcrumbs from "../components/CategoryBreadcrumbs";
 import { BookOpen, Menu, X, Folder, Image as ImageIcon, ArrowRight, Layers } from "lucide-react";
@@ -214,15 +213,6 @@ const Dashboard = () => {
                         {currentCategory?.description || "Browse by category or search below to find book"}
                     </p>
                 </div>
-
-                {/* 3. Filter Bar (Categories passed for dropdown) */}
-                <FilterBar 
-                    filters={filters}
-                    setFilters={setFilters}
-                    onApplyFilters={handleApplyFilters}
-                    onClearFilters={handleClearFilters}
-                    categories={categories} 
-                />
 
                 {/* 4. CONTENT VIEW SWITCHER */}
                 

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UserManagementRouteImport } from './routes/user-management'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as ManageHomepageRouteImport } from './routes/manage-homepage'
 import { Route as LoginRouteImport } from './routes/login'
@@ -24,6 +25,11 @@ import { Route as AddFreeContentRouteImport } from './routes/add-free-content'
 import { Route as AddBooksRouteImport } from './routes/add-books'
 import { Route as IndexRouteImport } from './routes/index'
 
+const UserManagementRoute = UserManagementRouteImport.update({
+  id: '/user-management',
+  path: '/user-management',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/manage-homepage': typeof ManageHomepageRoute
   '/orders': typeof OrdersRoute
+  '/user-management': typeof UserManagementRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/manage-homepage': typeof ManageHomepageRoute
   '/orders': typeof OrdersRoute
+  '/user-management': typeof UserManagementRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/manage-homepage': typeof ManageHomepageRoute
   '/orders': typeof OrdersRoute
+  '/user-management': typeof UserManagementRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/manage-homepage'
     | '/orders'
+    | '/user-management'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/manage-homepage'
     | '/orders'
+    | '/user-management'
   id:
     | '__root__'
     | '/'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/manage-homepage'
     | '/orders'
+    | '/user-management'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,10 +222,18 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ManageHomepageRoute: typeof ManageHomepageRoute
   OrdersRoute: typeof OrdersRoute
+  UserManagementRoute: typeof UserManagementRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/user-management': {
+      id: '/user-management'
+      path: '/user-management'
+      fullPath: '/user-management'
+      preLoaderRoute: typeof UserManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orders': {
       id: '/orders'
       path: '/orders'
@@ -330,6 +350,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ManageHomepageRoute: ManageHomepageRoute,
   OrdersRoute: OrdersRoute,
+  UserManagementRoute: UserManagementRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

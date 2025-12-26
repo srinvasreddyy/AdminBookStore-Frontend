@@ -16,6 +16,7 @@ const Layout = ({ children }) => {
   const mainMenuItems = [
     { name: 'Home', icon: Home, path: '/' },
     { name: 'Orders', icon: ShoppingBag, path: '/orders' },
+    { name: 'Users', icon: Users, path: '/user-management' },
     { name: 'Add Books', icon: Plus, path: '/add-books' },
     { name: 'Books Management', icon: Album, path: '/books-management' },
     { name: 'Category Management', icon: Layers2, path: '/category-management' },
