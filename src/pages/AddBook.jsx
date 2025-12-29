@@ -137,21 +137,55 @@ const AddBook = ({ bookId }) => {
   }
 
   const handleCategoryChange = (level, selectedId) => {
+    // 1. Handle "Select..." (clearing a selection)
+    if (!selectedId) {
+      const newPath = selectedPath.slice(0, level)
+      setSelectedPath(newPath)
+      
+      // Set the category ID to the parent's ID (or empty if clearing root)
+      const newCategoryId = level === 0 ? '' : selectedPath[level - 1]._id
+      setFormData(prev => ({ ...prev, category: newCategoryId }))
+      return
+    }
+
+    // 2. Find the selected category object from the correct options list
     const currentOptions = level === 0 ? categoryTree : selectedPath[level - 1]?.children || []
     const selectedCategory = currentOptions.find(c => c._id === selectedId)
 
     if (!selectedCategory) return
 
+    // 3. Update path and form data
     const newPath = [...selectedPath.slice(0, level), selectedCategory]
     setSelectedPath(newPath)
     
     setFormData(prev => ({ ...prev, category: selectedCategory._id }))
   }
 
-  const getOptionsForLevel = (level) => {
-    if (level === 0) return categoryTree
-    const parent = selectedPath[level - 1]
-    return parent?.children || []
+  // Helper to generate dynamic dropdowns based on selection depth
+  const getCategoryDropdowns = () => {
+    const dropdowns = []
+    
+    // Level 0 (Roots) is always visible
+    dropdowns.push({
+      level: 0,
+      label: 'Main Category',
+      options: categoryTree,
+      value: selectedPath[0]?._id || ''
+    })
+
+    // Add deeper levels if a parent is selected and has children
+    for (let i = 0; i < selectedPath.length; i++) {
+      const parent = selectedPath[i]
+      if (parent.children && parent.children.length > 0) {
+        dropdowns.push({
+          level: i + 1,
+          label: i === 0 ? 'Sub Category' : `Nested Category (Level ${i + 1})`,
+          options: parent.children,
+          value: selectedPath[i + 1]?._id || ''
+        })
+      }
+    }
+    return dropdowns
   }
 
   const formats = [
@@ -356,7 +390,7 @@ const AddBook = ({ bookId }) => {
             {/* Left Column - Main Information */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Category Selection Section (Optional) */}
+              {/* Category Selection Section (Dynamic) */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Tag className="w-5 h-5 text-gray-400" />
@@ -368,37 +402,23 @@ const AddBook = ({ bookId }) => {
                 ) : (
                   <div className="space-y-3">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {/* Level 1 */}
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase">Main Category</label>
-                        <select 
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
-                          value={selectedPath[0]?._id || ''}
-                          onChange={(e) => handleCategoryChange(0, e.target.value)}
-                        >
-                          <option value="">Select...</option>
-                          {categoryTree.map(cat => (
-                            <option key={cat._id} value={cat._id}>{cat.name}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Level 2 */}
-                      {selectedPath.length > 0 && getOptionsForLevel(1).length > 0 && (
-                        <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
-                          <label className="text-xs font-bold text-gray-500 uppercase">Sub Category</label>
+                      {getCategoryDropdowns().map((dropdown) => (
+                        <div key={dropdown.level} className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase">
+                            {dropdown.label}
+                          </label>
                           <select 
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm"
-                            value={selectedPath[1]?._id || ''}
-                            onChange={(e) => handleCategoryChange(1, e.target.value)}
+                            value={dropdown.value}
+                            onChange={(e) => handleCategoryChange(dropdown.level, e.target.value)}
                           >
                             <option value="">Select...</option>
-                            {getOptionsForLevel(1).map(cat => (
+                            {dropdown.options.map(cat => (
                               <option key={cat._id} value={cat._id}>{cat.name}</option>
                             ))}
                           </select>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
                 )}
